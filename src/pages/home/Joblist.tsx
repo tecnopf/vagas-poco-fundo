@@ -1,6 +1,6 @@
 // src/components/JobList.tsx
 import React, { useState } from "react";
-import "./JobList.scss";
+import "./Joblist.scss";
 import { CustomSelect } from "../../components/select/CustomSelect";
 
 type EducationLevel = "Ensino Fundamental" | "Ensino Médio" | "Ensino Superior";
