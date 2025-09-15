@@ -1,13 +1,22 @@
 import Home from "./pages/home/Home";
+import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
 import "./styles/main.scss";
 import './App.css'
+import Admin from "./pages/admin/Admin";
 
-function App() {
+
+const App: React.FC = () => {
   return (
-    <div>
-      <Home/>
-    </div>
+    <Router>
+      <Routes>
+        <Route path="/" element={<Home />} />
+        <Route
+          path="/admin"
+          element={<Admin />}
+        />
+      </Routes>
+    </Router>
   );
-}
+};
 
 export default App;
