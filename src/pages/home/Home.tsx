@@ -1,25 +1,24 @@
-import React from "react";
-import Header from "../../components/Header";
+import React, { useState } from "react";
+import Header from "../../components/header/Header";
 import JobList from "./Joblist";
 import { useAuth } from "../../hooks/UseAuth";
 import "./Home.scss";
+import LoginModal from "../../components/loginModal/LoginModal";
 
 const Home: React.FC = () => {
   const { authorized} = useAuth();
+  const [modalOpen, setModalOpen] = useState(false);
 
   if (authorized === null) return <p>Carregando...</p>;
 
   const handleLoginClick = () => {
-    alert("Abrir modal ou redirecionar para login");
-  };
-
-  const handleRegisterClick = () => {
-    alert("Abrir modal ou redirecionar para registro");
+    setModalOpen(true);
   };
 
   return (
     <div>
-      <Header onLoginClick={handleLoginClick} onRegisterClick={handleRegisterClick} />
+      <Header onLoginClick={handleLoginClick} />
+      <LoginModal open={modalOpen} onClose={() => setModalOpen(false)}/>
       {!authorized && <JobList />}
       {authorized && (
         <section className="hero">

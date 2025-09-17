@@ -2,6 +2,11 @@
 import React, { useState } from "react";
 import "./Joblist.scss";
 import { CustomSelect } from "../../components/select/CustomSelect";
+import { MdOutlineAccessTimeFilled } from "react-icons/md";
+import { MdStore } from "react-icons/md";
+import { MdSchool } from "react-icons/md";
+import { useIsMobile } from "../../hooks/UseIsMobile";
+import { IoIosArrowDown } from "react-icons/io";
 
 type EducationLevel = "Ensino Fundamental" | "Ensino Médio" | "Ensino Superior";
 
@@ -16,6 +21,7 @@ interface Job {
   expiration: string | null;
   educationLevel: EducationLevel;
   workingHoursPerDay: number;
+  createdDate: string
 }
 
 const educationLevels: EducationLevel[] = [
@@ -36,6 +42,7 @@ const jobs: Job[] = [
     expiration: "2025-09-25",
     educationLevel: "Ensino Médio",
     workingHoursPerDay: 8,
+    createdDate: "2025-09-10 10:30:00"
   },
   {
     id: 2,
@@ -45,9 +52,10 @@ const jobs: Job[] = [
     status: "opened",
     totalVacancies: 3,
     remainingVacancies: 1,
-    expiration: "2025-09-22",
+    expiration: null,
     educationLevel: "Ensino Fundamental",
     workingHoursPerDay: 6,
+    createdDate: "2025-09-10 09:30:00"
   },
   {
     id: 3,
@@ -60,14 +68,26 @@ const jobs: Job[] = [
     expiration: "2025-09-20",
     educationLevel: "Ensino Superior",
     workingHoursPerDay: 8,
+    createdDate: "2025-09-08 07:00:00",
   },
 ];
 
+const formatDateBR = (dateStr: string) => {
+  const date = new Date(dateStr);
+  const day = date.getDate().toString().padStart(2, "0");
+  const month = (date.getMonth() + 1).toString().padStart(2, "0"); // mês começa do 0
+  const year = date.getFullYear();
+  return `${day}/${month}/${year}`;
+};
+
+
 const JobList: React.FC = () => {
   const [statusFilter, setStatusFilter] = useState<"all" | "opened" | "filled">("all");
-  const [sortByVacancies, setSortByVacancies] = useState<"asc" | "desc">("desc");
+  const [sortByVacancies, setSortByVacancies] = useState<"asc" | "desc" | 'recent'| 'old'>("recent");
   const [educationFilter, setEducationFilter] = useState<EducationLevel | "all">("all");
   const [hoursFilter, setHoursFilter] = useState<number | "all">("all");
+  const isMobile = useIsMobile();
+  const [filtersOpen, setFiltersOpen] = useState(false);
 
   const getBarColor = (remaining: number, total: number) => {
     const percent = remaining / total;
@@ -80,54 +100,75 @@ const JobList: React.FC = () => {
     .filter((job) => (statusFilter === "all" ? true : job.status === statusFilter))
     .filter((job) => (educationFilter === "all" ? true : job.educationLevel === educationFilter))
     .filter((job) => (hoursFilter === "all" ? true : job.workingHoursPerDay === hoursFilter))
-    .sort((a, b) =>
-      sortByVacancies === "desc"
-        ? b.remainingVacancies - a.remainingVacancies
-        : a.remainingVacancies - b.remainingVacancies
-    );
+    .sort((a, b) => {
+      if (sortByVacancies === "asc") return a.remainingVacancies - b.remainingVacancies;
+      if (sortByVacancies === "desc") return b.remainingVacancies - a.remainingVacancies;
+      if (sortByVacancies === "recent") return new Date(b.createdDate).getTime() - new Date(a.createdDate).getTime();
+      if (sortByVacancies === "old") return new Date(a.createdDate).getTime() - new Date(b.createdDate).getTime();
+      return 0;
+    });
+
+  //return null
 
   return (
     <section id="vagas" className="job-list">
       <h2>Vagas Disponíveis</h2>
+      <div className={`filters-wrapper ${isMobile ? "mobile" : ""}`}>
+        {isMobile && (
+          <button
+            className="filters-toggle"
+            onClick={() => setFiltersOpen((o) => !o)}
+          >
+            <IoIosArrowDown
+              className={`arrow ${filtersOpen ? "open" : ""}`}
+            />
+          </button>
+        )}
 
-      <div className="filters">
-        <CustomSelect<"all" | "opened" | "filled">
-          options={["all", "opened", "filled"]}
-          value={statusFilter}
-          onChange={setStatusFilter}
-          placeholder="Todos os status"
-          getLabel={(val:  "all" | "opened" | "filled") =>
-            val === "all" ? "Todos os status" : val === "opened" ? "Aberta" : "Preenchida"
-          }
-        />
-        
+        <div className={`filters ${filtersOpen || !isMobile ? "open" : ""}`}>
+          <CustomSelect<"all" | "opened" | "filled">
+            options={["all", "opened", "filled"]}
+            value={statusFilter}
+            onChange={setStatusFilter}
+            placeholder="Todos os status"
+            getLabel={(val:  "all" | "opened" | "filled") =>
+              val === "all" ? "Todos os status" : val === "opened" ? "Aberta" : "Preenchida"
+            }
+          />
+          
 
-        <CustomSelect<"asc" | "desc">
-          options={["asc", "desc"]}
-          value={sortByVacancies}
-          onChange={setSortByVacancies}
-          placeholder="Ordem de vagas"
-          getLabel={(val: 'asc' | 'desc') =>
-            val === "asc"
-              ? "Vagas restantes crescente"
-              : "Vagas restantes decrescente"
-          }
-        />
+          <CustomSelect<"asc" | "desc" | 'recent'| 'old'>
+            options={['recent', 'old', "asc", "desc"]}
+            value={sortByVacancies}
+            onChange={setSortByVacancies}
+            placeholder="Ordem de vagas"
+            getLabel={(val) =>
+              val === "asc"
+                ? "Menos vagas restantes"
+                : val === "desc"
+                ? "Mais vagas restantes"
+                : val === "recent"
+                ? "Mais recentes"
+                : "Mais antigas"
+            }
+          />
 
-        <CustomSelect<EducationLevel | "all">
-          options={["all", ...educationLevels]}
-          value={educationFilter}
-          onChange={setEducationFilter}
-          placeholder="Todos os níveis"
-        />
+          <CustomSelect<EducationLevel | "all">
+            options={["all", ...educationLevels]}
+            value={educationFilter}
+            onChange={setEducationFilter}
+            placeholder="Todos os níveis"
+            getLabel={(val)=>val === "all" ? "Todos os níveis" : val}
+          />
 
-        <CustomSelect<number | "all">
-          options={["all", 6, 8]}
-          value={hoursFilter}
-          onChange={(val: 'all' | number) => setHoursFilter(val === "all" ? "all" : Number(val))}
-          placeholder="Todas as cargas horárias"
-          getLabel={(val: 'all' | number) => (val === "all" ? "Todas as cargas horárias" : `${val}h/dia`)}
-        />
+          <CustomSelect<number | "all">
+            options={["all", 3,4,5,6,7,8,9,10]}
+            value={hoursFilter}
+            onChange={(val: 'all' | number) => setHoursFilter(val === "all" ? "all" : Number(val))}
+            placeholder="Todas as cargas horárias"
+            getLabel={(val: 'all' | number) => (val === "all" ? "Todas as cargas horárias" : `${val}h/dia`)}
+          />
+        </div>
       </div>
 
       <ul>
@@ -144,8 +185,11 @@ const JobList: React.FC = () => {
                 </span>
               </div>
               <p className="description">{job.description}</p>
-              <p className="establishment">{job.establishment}</p>
-              <p>
+              <div className="companyWrapper">
+                <MdStore className="companyIcon" />
+                <p className="establishment">{job.establishment}</p>
+              </div>
+              <p className="vacancy">
                 Vagas: {job.remainingVacancies}/{job.totalVacancies}
               </p>
               <div className="vacancy-bar">
@@ -157,9 +201,24 @@ const JobList: React.FC = () => {
                   }}
                 ></div>
               </div>
-              <p>Expiração: {job.expiration || "Não informado"}</p>
-              <p>Nível de Escolaridade: {job.educationLevel}</p>
-              <p>Horas de Trabalho: {job.workingHoursPerDay}h/dia</p>
+              <div className="icon-text">
+                <MdSchool className="icon" />
+                <p>{job.educationLevel}</p>
+              </div>
+              
+              <div className="icon-text">
+                <MdOutlineAccessTimeFilled className="icon" />
+                {job.workingHoursPerDay}h/dia
+              </div>
+
+              <button>Ver Mais</button>
+              {job.expiration && (
+                <>
+                <div className="expiration-spacer"></div>
+                <p className="expiration">Expiração: {formatDateBR(job.expiration)}</p>
+                </>
+              )}
+              
             </li>
           );
         })}

@@ -1,5 +1,6 @@
 import  { useState, useRef, useEffect } from "react";
 import "./CustomSelect.scss";
+import { IoMdArrowDropdown } from "react-icons/io";
 
 interface CustomSelectProps<T> {
   options: T[];
@@ -31,7 +32,9 @@ export function CustomSelect<T extends string | number>({
     <div className="custom-select" ref={ref}>
       <button className="select-btn" onClick={() => setOpen((o) => !o)}>
         {value ? getLabel(value) : placeholder}
-        <span className={`arrow ${open ? "open" : ""}`}>▼</span>
+        <span className={`arrow ${open ? "open" : ""}`}>
+          <IoMdArrowDropdown />
+        </span>
       </button>
       {open && (
         <ul className="select-options">

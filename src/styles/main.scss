@@ -1,13 +1,10 @@
+@import "../fonts/fonts";
+
+
 $primary-color: #3498db;
 
-* {
-  margin: 0;
-  padding: 0;
-  box-sizing: border-box;
-}
-
 body {
-  font-family: Arial, sans-serif;
+  font-family: "SF-Regular", Arial, sans-serif;
   background: #f8f9fa;
   color: $primary-color;
 }
