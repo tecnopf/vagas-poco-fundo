@@ -75,6 +75,10 @@
     gap: 10px;
   }
 
+  input {
+    background-color: #fff;
+  }
+
   input, button {
     padding: .6rem;
     border: 1px solid #ccc;
@@ -109,4 +113,19 @@
   color: white;
   border-radius: 6px;
   text-decoration: none;
+}
+
+.error {
+  position: absolute;
+  left: 0;
+  right: 0;
+}
+
+@keyframes blink {
+  0%, 100% { color: #09531a; } 
+  50% { color: red; }          
+}
+
+.info.error-blink {
+  animation: blink 1.5s ease 3; 
 }

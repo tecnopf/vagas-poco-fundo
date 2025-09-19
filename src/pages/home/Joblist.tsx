@@ -8,6 +8,7 @@ import { MdSchool } from "react-icons/md";
 import { useIsMobile } from "../../hooks/UseIsMobile";
 import { IoIosArrowDown } from "react-icons/io";
 
+
 type EducationLevel = "Ensino Fundamental" | "Ensino Médio" | "Ensino Superior";
 
 interface Job {
@@ -81,6 +82,11 @@ const formatDateBR = (dateStr: string) => {
 };
 
 
+//import ShinyText from "../../components/shiny-text/ShinyText";
+
+import ShinyText from "../../components/ShinyText";
+
+
 const JobList: React.FC = () => {
   const [statusFilter, setStatusFilter] = useState<"all" | "opened" | "filled">("all");
   const [sortByVacancies, setSortByVacancies] = useState<"asc" | "desc" | 'recent'| 'old'>("recent");
@@ -112,7 +118,12 @@ const JobList: React.FC = () => {
 
   return (
     <section id="vagas" className="job-list">
-      <h2>Vagas Disponíveis</h2>
+      <ShinyText 
+        text="Vagas Disponíveis" 
+        disabled={false} 
+        speed={3} 
+        className='h2' 
+      />
       <div className={`filters-wrapper ${isMobile ? "mobile" : ""}`}>
         {isMobile && (
           <button

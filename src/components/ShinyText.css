@@ -1,0 +1,71 @@
+.shiny-text {
+  position: relative;
+  display: inline-block;
+  color: #1c1c1c; 
+  user-select: none;
+}
+
+.shiny-text-hoverable {
+  position: relative;
+  display: inline-block;
+  color: #1c1c1c; 
+  user-select: none;
+}
+
+.shiny-text::before {
+  content: attr(data-text);
+  position: absolute;
+  top: 0; left: 0;
+  width: 100%; height: 100%;
+  color: transparent;
+  background: linear-gradient(
+    120deg,
+    rgba(255,255,255,0) 40%,
+    rgba(255,255,255,0.8) 50%,
+    rgba(255,255,255,0) 60%
+  );
+  background-size: 200% 100%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  pointer-events: none;
+
+  animation: shine 5s linear infinite;
+}
+
+.shiny-text-hoverable::before {
+  content: attr(data-text);
+  position: absolute;
+  user-select: none;
+  top: 0; left: 0;
+  width: 100%; height: 100%;
+  color: transparent;
+  background: var(--shine-gradient);
+  
+  background-size: 200% 100%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  pointer-events: none;
+  opacity: 0;
+  animation: shine 5s linear infinite;
+
+  transition: opacity 0.2s ease-in-out;
+}
+
+.shiny-text-hoverable:hover::before {
+  opacity: 1;
+  animation: shine var(--shine-speed) linear infinite;
+}
+
+@keyframes shine {
+  0% {
+    background-position: 100%;
+  }
+  100% {
+    background-position: -100%;
+  }
+}
+
+.shiny-text.disabled::before {
+  animation: none !important;
+  opacity: 0 !important;
+}
