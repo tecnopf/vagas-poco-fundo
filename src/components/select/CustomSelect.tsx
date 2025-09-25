@@ -1,6 +1,7 @@
 import  { useState, useRef, useEffect } from "react";
 import "./CustomSelect.scss";
-import { IoMdArrowDropdown } from "react-icons/io";
+
+import { IoIosArrowDown } from "react-icons/io";
 
 interface CustomSelectProps<T> {
   options: T[];
@@ -8,6 +9,7 @@ interface CustomSelectProps<T> {
   onChange: (val: T) => void;
   placeholder?: string;
   getLabel?: (val: T) => string;
+  customClass?: string
 }
 
 export function CustomSelect<T extends string | number>({
@@ -16,6 +18,7 @@ export function CustomSelect<T extends string | number>({
   onChange,
   placeholder = "Select",
   getLabel = (val) => String(val),
+  customClass
 }: CustomSelectProps<T>) {
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
@@ -29,11 +32,11 @@ export function CustomSelect<T extends string | number>({
   }, []);
 
   return (
-    <div className="custom-select" ref={ref}>
+    <div className={`custom-select ${customClass}`} ref={ref}>
       <button className="select-btn" onClick={() => setOpen((o) => !o)}>
         {value ? getLabel(value) : placeholder}
         <span className={`arrow ${open ? "open" : ""}`}>
-          <IoMdArrowDropdown />
+          <IoIosArrowDown style={{marginLeft: 4}} />
         </span>
       </button>
       {open && (

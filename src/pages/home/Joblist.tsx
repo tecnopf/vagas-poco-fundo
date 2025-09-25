@@ -81,9 +81,6 @@ const formatDateBR = (dateStr: string) => {
   return `${day}/${month}/${year}`;
 };
 
-
-//import ShinyText from "../../components/shiny-text/ShinyText";
-
 import ShinyText from "../../components/ShinyText";
 
 

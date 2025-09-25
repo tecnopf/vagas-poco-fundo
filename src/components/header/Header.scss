@@ -33,6 +33,16 @@
     padding-right: 0;
     cursor: pointer;
   }
+  .logout-btn {
+    padding: 7px;
+    background-color: variables.$green;
+    transition: all 0.2s ease;
+    &:hover {
+      background-color: #2dc76d;
+      backdrop-filter: blur(6px); // aplica o blur no fundo
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+    }
+  }
   img {
     margin-right: 20px;
     height: 60px; 

@@ -5,28 +5,12 @@ import InfoModal from "./InfoModal";
 import { useAuth } from "../../context/AuthContext";
 import Loading from "../loading/Loading";
 import { API_URL } from "../../configs";
+import { formatCNPJ } from "../../utils/formatCNPJ";
 
 interface LoginModalProps {
   open: boolean;
   onClose: () => void;
 }
-
-const formatCNPJ = (value: string) => {
-  const digits = value.replace(/\D/g, "").slice(0, 14);
-  if (digits.length <= 2) return digits;
-  if (digits.length <= 5) return `${digits.slice(0, 2)}.${digits.slice(2)}`;
-  if (digits.length <= 8)
-    return `${digits.slice(0, 2)}.${digits.slice(2, 5)}.${digits.slice(5)}`;
-  if (digits.length <= 12)
-    return `${digits.slice(0, 2)}.${digits.slice(2, 5)}.${digits.slice(
-      5,
-      8
-    )}/${digits.slice(8)}`;
-  return `${digits.slice(0, 2)}.${digits.slice(2, 5)}.${digits.slice(
-    5,
-    8
-  )}/${digits.slice(8, 12)}-${digits.slice(12)}`;
-};
 
 const LoginModal: React.FC<LoginModalProps> = ({ open, onClose }) => {
   if (!open) return null;
@@ -50,6 +34,38 @@ const LoginModal: React.FC<LoginModalProps> = ({ open, onClose }) => {
   const handleCnpjChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setCnpj(formatCNPJ(e.target.value));
   };
+
+  const handleLoginSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoadingText("Entrando...");
+    setLoading(true);
+    setError(null);
+
+    try {
+      const res = await fetch(`${API_URL}/api/auth/login`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, password }),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        let errorMessage = data.error || "Erro ao entrar";
+        if (res.status === 401) errorMessage = "Credenciais inválidas";
+        throw new Error(errorMessage);
+      }
+
+      login(data.token);
+
+      onClose();
+    } catch (err: any) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
 
   const handleRegisterSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -136,7 +152,7 @@ const LoginModal: React.FC<LoginModalProps> = ({ open, onClose }) => {
 
           <div className="modal-body">
             {mode === "login" ? (
-              <form>
+              <form onSubmit={handleLoginSubmit}>
                 <h3>Entre como Estabelecimento para anunciar suas vagas!</h3>
                 <input
                   type="email"
