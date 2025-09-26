@@ -3,6 +3,10 @@ import { ImSpinner9 } from "react-icons/im";
 import { FaWhatsapp, FaInstagram, FaFacebook, FaLinkedin } from "react-icons/fa";
 import { MdEmail } from "react-icons/md";
 import "./SocialLinksModal.scss";
+import { useProfile } from "../../cached-requests/getProfile";
+import { API_URL } from "../../configs";
+import { useAuth } from "../../context/AuthContext";
+import ErrorPopup from "../../components/error-popup/ErrorPopup";
 
 interface Props {
   isOpen: boolean;
@@ -16,7 +20,7 @@ export type SocialLinks = {
   instagram?: string;
   facebook?: string;
   linkedin?: string;
-  useAccountLinks?: boolean;
+  useAccountEmail?: boolean;
 };
 
 const formatWhatsapp = (value: string) => {
@@ -30,11 +34,27 @@ const formatWhatsapp = (value: string) => {
 
 const SocialLinksModal: React.FC<Props> = ({ isOpen, onClose, onSave }) => {
   const [links, setLinks] = useState<SocialLinks>({});
+  const { data, isLoading, isError } = useProfile()
+  const { token } = useAuth()
   const [saving, setSaving] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [errorPopup, setErrorPopup] = useState<number|null>(null);
+
+  useEffect(()=>{
+    console.log('isError: ',isError)
+    console.log(links)
+    console.log(data)
+
+  },[links, data, isError])
 
   useEffect(() => {
-    if (isOpen) {
+    if (isOpen && data && data.socialLinks) {
+      setLinks({
+        ...data.socialLinks,
+        useAccountEmail: data.socialLinks.useAccountEmail ?? false,
+      });
+      setErrors({});
+    } else if (isOpen) {
       setLinks({});
       setErrors({});
     }
@@ -71,9 +91,15 @@ const SocialLinksModal: React.FC<Props> = ({ isOpen, onClose, onSave }) => {
         newErrors[f] = "O link deve começar com http:// ou https://";
       }
     });
-    if (links.email && !/^https?:\/\//i.test(links.email)) {
-      newErrors["email"] = "O email deve ser um link válido (http://...)";
+
+    if (links.whatsapp) {
+      const digits = links.whatsapp.replace(/\D/g, "");
+      if (digits.length < 10) {
+        console.log('whats')
+        newErrors.whatsapp = "Número de WhatsApp incompleto";
+      }
     }
+
     return newErrors;
   };
 
@@ -83,14 +109,47 @@ const SocialLinksModal: React.FC<Props> = ({ isOpen, onClose, onSave }) => {
       setErrors(newErrors);
       return;
     }
+
+    const originalLinks = data?.socialLinks || {};
+    const hasChanges = JSON.stringify(links) !== JSON.stringify(originalLinks);
+    if (!hasChanges) {
+      onClose();
+      return;
+    }
+
     setSaving(true);
-    await new Promise((r) => setTimeout(r, 1000));
-    setSaving(false);
-    onSave(links);
-    onClose();
+
+    try {
+      const res = await fetch(`${API_URL}/api/profile/social-links`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify(links),
+      });
+
+      if (!res.ok) {
+        console.error(res.json())
+        setErrorPopup(res.status);
+        return;
+      }
+
+      const updated = await res.json();
+      onSave(updated); 
+      onClose();
+    } catch (err: any) {
+      console.error(err);
+      console.error(err)
+      setErrorPopup(err.status)
+    } finally {
+      setSaving(false);
+    }
   };
 
+
   return (
+    <>
     <div className="modal-overlay">
       <div className="modal-content new-links">
         {saving && (
@@ -113,6 +172,7 @@ const SocialLinksModal: React.FC<Props> = ({ isOpen, onClose, onSave }) => {
             <FaWhatsapp style={{ marginLeft: 8, marginRight: 8 }} /> WhatsApp
           </label>
           {links.whatsapp !== undefined && (
+            <>
             <input
               type="text"
               value={links.whatsapp}
@@ -120,18 +180,32 @@ const SocialLinksModal: React.FC<Props> = ({ isOpen, onClose, onSave }) => {
               placeholder="(35) 99999-9999"
               maxLength={15}
             />
+            {errors.whatsapp && <span className="error">{errors.whatsapp}</span>}
+            </>
           )}
         </div>
 
         {/* Email */}
         <div className="social-field">
-          <label>
+          <label style={{color: links.useAccountEmail ? "#b5b5b5" : "#333"}}>
             <input
               type="checkbox"
               checked={links.email !== undefined}
-              onChange={(e) => toggleField("email", e.target.checked)}
+              onChange={(e) => {
+                if (e.target.checked) {
+                  setLinks((prev) => ({ ...prev, email: "", useAccountEmail: false }));
+                } else {
+                  setLinks((prev) => {
+                    const { email, ...rest } = prev;
+                    return rest;
+                  });
+                }
+              }}
+              disabled={!!links.useAccountEmail} // desativa se estiver usando email da conta
             />
-            <MdEmail style={{ marginLeft: 8, marginRight: 8 }} /> Email
+            <MdEmail style={{ marginLeft: 8, marginRight: 8,
+              color: links.useAccountEmail ? "#b5b5b5" : "#555"
+              }} /> Email
           </label>
           {links.email !== undefined && (
             <>
@@ -139,8 +213,7 @@ const SocialLinksModal: React.FC<Props> = ({ isOpen, onClose, onSave }) => {
                 type="text"
                 value={links.email}
                 onChange={(e) => updateValue("email", e.target.value)}
-                placeholder="http://seu-email"
-                disabled={links.useAccountLinks}
+                placeholder="seu@email.com"
               />
               {errors.email && <span className="error">{errors.email}</span>}
             </>
@@ -218,16 +291,25 @@ const SocialLinksModal: React.FC<Props> = ({ isOpen, onClose, onSave }) => {
 
         <hr style={{ margin: "16px 0" }} />
 
-        {/* Usar o mesmo da conta (somente email) */}
+        {/* Usar o mesmo email da conta (somente email) */}
         <div className="social-field">
-          <label>
+          <label style={{color: links.email !== undefined ? "#b5b5b5" : "#1d1d1f" }}>
             <input
               type="checkbox"
-              checked={!!links.useAccountLinks}
-              onChange={(e) => updateValue("useAccountLinks", e.target.checked)}
-              disabled={links.email === undefined}
+              checked={!!links.useAccountEmail}
+              onChange={(e) => {
+                if (e.target.checked) {
+                  setLinks((prev) => {
+                    const { email, ...rest } = prev;
+                    return { ...rest, useAccountEmail: true };
+                  });
+                } else {
+                  setLinks((prev) => ({ ...prev, useAccountEmail: false }));
+                }
+              }}
+              disabled={links.email !== undefined} // desativa se o email estiver ativo
             />
-            Usar o mesmo da conta (email)
+            Usar o mesmo email da conta
           </label>
         </div>
 
@@ -239,8 +321,11 @@ const SocialLinksModal: React.FC<Props> = ({ isOpen, onClose, onSave }) => {
             Cancelar
           </button>
         </div>
+
       </div>
     </div>
+    <ErrorPopup onClose={()=>setErrorPopup(null)} isOpen={errorPopup? true : false} statusCode={errorPopup ?? undefined}/>
+    </>
   );
 };
 

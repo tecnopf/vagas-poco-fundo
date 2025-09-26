@@ -14,16 +14,35 @@ import { LiaLinkSolid } from "react-icons/lia";
 import Toast from "../../components/toast/Toast";
 import NewVacancyModal from "./NewVacancyModal";
 import SocialLinksModal from "./SocialLinksModal";
+import { useNavigate } from "react-router-dom";
+import { useQueryClient } from "@tanstack/react-query";
+import ErrorPopup from "../../components/error-popup/ErrorPopup";
 
 
 const Profile: React.FC = () => {
-  const { data, isLoading } = useProfile();
+  const {authorized, token, loadingToken } = useAuth()
+  console.log('authorized: ',authorized)
+  const { data, isLoading, isError } = useProfile();
   const [error, setError] = useState<string | null>(null);
   const [showNewVacancyModal, setShowNewVacancyModal] = useState(false);
   const [showSocialLinksModal,setShowSocialLinksModal] = useState(false);
+  const navigate = useNavigate()
+  const queryClient = useQueryClient()
+
+  useEffect(() => {
+    if(loadingToken){
+      return
+    }
+    if (!authorized || isError) {
+      console.log('redirecting')
+      queryClient.invalidateQueries({ queryKey: ["profile"] })
+      navigate("/")
+    }
+  }, [authorized, isError, error, queryClient, loadingToken])
 
 
-  const { token } = useAuth()
+
+  console.log('token: ', token)
 
   const [formData, setFormData] = useState({
     name: "",
@@ -231,7 +250,8 @@ const Profile: React.FC = () => {
         onClose={() => setShowNewVacancyModal(false)}
         onSave={() => null}
       />
-      <SocialLinksModal isOpen={showSocialLinksModal} onClose={()=>setShowSocialLinksModal(false)} onSave={()=>null}/>
+      <SocialLinksModal isOpen={showSocialLinksModal} onClose={()=>setShowSocialLinksModal(false)} onSave={()=>queryClient.invalidateQueries({ queryKey: ["profile"] })}/>
+      
     </>
   );
 };

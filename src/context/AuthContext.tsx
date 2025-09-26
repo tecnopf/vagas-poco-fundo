@@ -7,6 +7,7 @@ interface AuthContextType {
   login: (token: string) => void;
   logout: () => void;
   token: string | null;
+  loadingToken: boolean;
 }
 
 const AuthContext = createContext<AuthContextType | null>(null);
@@ -14,6 +15,7 @@ const AuthContext = createContext<AuthContextType | null>(null);
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [authorized, setAuthorized] = useState<boolean | null>(null);
   const [token, setToken] = useState<string | null>(null);
+  const [loadingToken, setLoadingToken] = useState(true); // novo estado
 
   useEffect(() => {
     const stored = localStorage.getItem("jwt");
@@ -22,6 +24,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       checkToken(stored);
     } else {
       setAuthorized(false);
+      setLoadingToken(false); // já terminou a checagem
     }
   }, []);
 
@@ -40,6 +43,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     } catch (err) {
       console.warn("Invalid token, logging out...");
       logout();
+    } finally {
+      setLoadingToken(false); // termina a checagem independentemente do resultado
     }
   };
 
@@ -56,7 +61,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   return (
-    <AuthContext.Provider value={{ authorized, login, logout, token }}>
+    <AuthContext.Provider value={{ authorized, login, logout, token, loadingToken }}>
       {children}
     </AuthContext.Provider>
   );

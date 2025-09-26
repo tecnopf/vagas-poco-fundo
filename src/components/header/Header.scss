@@ -24,7 +24,6 @@
     transition: all .1s ease-out;
     &:hover {
       color: variables.$yellow-hover;
-      transform: scale(1.1);
     }
   }
   button {
