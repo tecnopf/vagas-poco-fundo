@@ -16,33 +16,44 @@ import NewVacancyModal from "./NewVacancyModal";
 import SocialLinksModal from "./SocialLinksModal";
 import { useNavigate } from "react-router-dom";
 import { useQueryClient } from "@tanstack/react-query";
-import ErrorPopup from "../../components/error-popup/ErrorPopup";
+import Footer from "../../components/footer/Footer";
 
 
 const Profile: React.FC = () => {
-  const {authorized, token, loadingToken } = useAuth()
-  console.log('authorized: ',authorized)
+  const {authorized, token, loadingToken, logout } = useAuth()
   const { data, isLoading, isError } = useProfile();
   const [error, setError] = useState<string | null>(null);
   const [showNewVacancyModal, setShowNewVacancyModal] = useState(false);
   const [showSocialLinksModal,setShowSocialLinksModal] = useState(false);
+  const [isSavingProfile, setIsSavingProfile] = useState(false);
   const navigate = useNavigate()
   const queryClient = useQueryClient()
+
+  useEffect(() => {
+    if (showNewVacancyModal) {
+      document.body.style.overflow = "hidden"; 
+    } else {
+      document.body.style.overflow = ""; 
+    }
+
+    return () => {
+      document.body.style.overflow = ""; 
+    };
+  }, [showNewVacancyModal])
+
+  const openNewVacancy = () => {
+    setShowNewVacancyModal(true)
+  };
 
   useEffect(() => {
     if(loadingToken){
       return
     }
     if (!authorized || isError) {
-      console.log('redirecting')
       queryClient.invalidateQueries({ queryKey: ["profile"] })
       navigate("/")
     }
   }, [authorized, isError, error, queryClient, loadingToken])
-
-
-
-  console.log('token: ', token)
 
   const [formData, setFormData] = useState({
     name: "",
@@ -88,8 +99,8 @@ const Profile: React.FC = () => {
   const handleSave = async () => {
     if (!data) return;
     setError(null); 
+    setIsSavingProfile(true)
 
-    // Create a payload with only changed values
     const payload: Partial<typeof formData> = {};
     if (formData.name !== data.name) payload.name = formData.name;
     if (formData.email !== data.email) payload.email = formData.email;
@@ -98,10 +109,9 @@ const Profile: React.FC = () => {
 
     if (Object.keys(payload).length === 0) {
       setEditing(false); 
+      setIsSavingProfile(false)
       return;
     }
-
-    console.log(JSON.stringify(payload))
 
     try {
       const res = await fetch(`${API_URL}/api/profile`, {
@@ -120,24 +130,25 @@ const Profile: React.FC = () => {
       }
 
       setFormData({ ...formData, password: "" }); 
+      await queryClient.invalidateQueries({ queryKey: ["profile"] });
       setEditing(false);
     } catch (err: any) {
       console.error(err);
       setError(err.message);
     } finally {
-      
+      setIsSavingProfile(false)
     }
   };
 
   return (
     <>
       <Header onLoginClick={() => null} />
-      <Vacancy onProfileClick={() => setIsOpen(true)}/>
+      <Vacancy onProfileClick={() => setIsOpen(true)} onGetStartedClick={()=>setShowNewVacancyModal(true)}/>
 
       <div className={`profile-sidebar ${isOpen ? "open" : ""}`}>
         {isLoading ? (
           <div className="profile-loading">
-            <ImSpinner9 className="spinner" />
+            <ImSpinner9 className="spinner"  />
           </div>
         ) : (
           <>
@@ -191,11 +202,13 @@ const Profile: React.FC = () => {
 
               {editing ? (
                 <div style={{ display: "flex", gap: "1rem" }}>
-                  <button onClick={handleSave} className="generic-button">
-                    Salvar
+                  <button disabled={isSavingProfile} style={{display: 'flex', justifyContent: 'center', maxHeight: '52.48px'}} onClick={handleSave} className="generic-button">
+                    {isSavingProfile ? <ImSpinner9 className="spinner-icon" color="#ffff" style={{color: 'white', width: 25, height: 25}} /> : 'Salvar'}
                   </button>
                   <button
                     className="generic-button cancel"
+                    style={{maxHeight: '52.48px'}}
+                    disabled={isSavingProfile}
                     onClick={() => {
                       setFormData({
                         name: data?.name || "",
@@ -210,10 +223,16 @@ const Profile: React.FC = () => {
                   </button>
                 </div>
               ) : (
+                <>
                 <button style={{marginTop: '2rem'}} onClick={() => setEditing(true)} className="edit-button">
                   Editar
                 </button>
+                <button  style={{marginTop: '.5rem'}} onClick={() => logout()} className="edit-button">
+                  Sair
+                </button>
+              </>
               )}
+              
               {error && <p className="form-error">{error}</p>}
             </div>
 
@@ -232,15 +251,16 @@ const Profile: React.FC = () => {
           </>
         )}
       </div>
+      <Footer/>
 
       <div className="floating-button-wrapper">
         <Toast placement="top" message="Criar vaga">
-        <button onClick={()=>setShowNewVacancyModal(true)}>
+        <button onClick={openNewVacancy}>
           <IoIosAddCircle className="floating-button" />
         </button>
         </Toast>
         <Toast placement="top" message="Redes sociais">
-        <button onClick={()=>setShowSocialLinksModal(true)} className="social-media">
+        <button onClick={()=>{setShowSocialLinksModal(true); document.body.style.overflow = 'hidden'}} className="social-media">
           <LiaLinkSolid className="floating-button social-media" width={50} height={50} color="white" />
         </button>
         </Toast>
@@ -250,7 +270,10 @@ const Profile: React.FC = () => {
         onClose={() => setShowNewVacancyModal(false)}
         onSave={() => null}
       />
-      <SocialLinksModal isOpen={showSocialLinksModal} onClose={()=>setShowSocialLinksModal(false)} onSave={()=>queryClient.invalidateQueries({ queryKey: ["profile"] })}/>
+      {showSocialLinksModal && (
+         <SocialLinksModal isOpen={true} onClose={()=>{setShowSocialLinksModal(false); document.body.style.overflow = ''}} onSave={()=>queryClient.invalidateQueries({ queryKey: ["profile"] })}/>
+      )}
+     
       
     </>
   );

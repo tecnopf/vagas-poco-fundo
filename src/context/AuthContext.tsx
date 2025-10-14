@@ -24,11 +24,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       checkToken(stored);
     } else {
       setAuthorized(false);
-      setLoadingToken(false); // já terminou a checagem
+      setLoadingToken(false); 
     }
   }, []);
 
   const checkToken = async (token: string) => {
+
     try {
       const res = await fetch(`${API_URL}/api/auth/check`, {
         method: "GET",
@@ -39,12 +40,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       });
 
       if (!res.ok) throw new Error("Invalid token");
+
       setAuthorized(true);
     } catch (err) {
       console.warn("Invalid token, logging out...");
       logout();
     } finally {
-      setLoadingToken(false); // termina a checagem independentemente do resultado
+      setLoadingToken(false); 
     }
   };
 

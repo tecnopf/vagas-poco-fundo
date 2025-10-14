@@ -19,7 +19,6 @@
   width: 400px;
   max-width: 90%;
   box-shadow: 0 4px 20px rgba(0,0,0,0.3);
-  min-height: 550px;
 }
 
 .modal-header {
@@ -92,6 +91,10 @@
     color: white;
     border: none;
     cursor: pointer;
+
+    &:hover {
+      background: #0d7726;
+    }
   }
 }
 
@@ -113,12 +116,25 @@
   color: white;
   border-radius: 6px;
   text-decoration: none;
+  &:hover {
+    color: white;
+
+  }
 }
 
 .error {
   position: absolute;
   left: 0;
   right: 0;
+}
+
+#forgot-passw {
+  text-align: left;
+  color: #9b9b9b;
+  font-family: 'SF-Regular';
+  text-decoration: underline;
+  cursor: pointer;
+  width: fit-content;
 }
 
 @keyframes blink {

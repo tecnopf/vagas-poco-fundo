@@ -6,19 +6,29 @@ body {
 }
 
 .admin-container {
-  max-width: 600px;
-  margin: 50px auto;
+  width: 100vw;
+  height: 100vh;
   padding: 30px;
-  background: #ffffff;
-  border-radius: 20px;
-  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.08);
   text-align: center;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
-.admin-container h1 {
-  font-size: 1.8rem;
+#new-token-button {
+  background-color: #fff;
+  color: green;
+  &:hover {
+    background-color: green;
+    color: white
+  }
+}
+
+.admin-h1 {
+  font-size: 3rem;
   font-weight: 600;
-  margin-bottom: 20px;
+  margin-bottom: 0px;
+  color: white
 }
 
 .admin-form {
@@ -64,6 +74,7 @@ body {
 .token-list {
   margin-top: 30px;
   text-align: left;
+  
 
   .header {
     display: flex;
@@ -74,6 +85,7 @@ body {
     h2 {
       font-size: 1.3rem;
       font-weight: 600;
+      color: #fff
     }
 
     button {
@@ -108,8 +120,8 @@ body {
 
 .token-list ul {
   list-style: none;
-  padding: 0;
   margin: 0;
+  padding-left: 20px;
 }
 
 .token-list li {
@@ -119,7 +131,7 @@ body {
   padding: 0;
   border: none;
   border-radius: 12px;
-  margin-bottom: 10px;
+  margin-top: 10px;
   background:transparent;
   transition: background-color 0.3s ease;
 }

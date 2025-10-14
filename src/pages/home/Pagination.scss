@@ -1,0 +1,26 @@
+.pagination-controls {
+  margin-top: 2em;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  div {
+    min-width: 300px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+  }
+
+  button.disabled-btn {
+    opacity: 0;
+    pointer-events: none;
+
+  }
+
+  span {
+    display: block;
+    min-width: 120px;
+    width: fit-content;
+    font-family: 'SF-Bold';
+  }
+}

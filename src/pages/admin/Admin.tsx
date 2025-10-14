@@ -58,24 +58,29 @@ const AdminPage: React.FC = () => {
   if (!authorized) {
     return (
       <div className="admin-container">
-        <h1>Login Admin</h1>
-        <form onSubmit={handleLogin}>
-          <input
-            type="password"
-            value={key}
-            onChange={(e) => setKey(e.target.value)}
-            placeholder="Digite a chave"
-          />
-          <button type="submit">Entrar</button>
-        </form>
-        {error && <p style={{ color: "red" }}>{error}</p>}
+        <div style={{backgroundColor: 'white', padding: 25, borderRadius: 15}}>
+          <h1>Login Admin</h1>
+          <form onSubmit={handleLogin}>
+            <input
+              type="password"
+              style={{border: '1px solid #b7b7b7', borderRadius: '10px', paddingLeft: '15px', marginRight: '10px'}}
+              value={key}
+              onChange={(e) => setKey(e.target.value)}
+              placeholder="Digite a chave"
+            />
+            <button type="submit">Entrar</button>
+          </form>
+          {error && <p style={{ color: "red" }}>{error}</p>}
+
+        </div>
+
       </div>
     );
   }
 
   return (
-    <div>
-      <h1>Área Administrativa</h1>
+    <div style={{background: 'black', paddingTop: '1.5em', paddingBottom: '1.5em'}}>
+      <h1 className="admin-h1">Área Administrativa</h1>
       {authorized && <AdminTokenList />}
     </div>
   );

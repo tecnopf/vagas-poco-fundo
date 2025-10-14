@@ -7,7 +7,7 @@
   .select-btn {
     width: 100%;
     padding: 0.5rem 1rem;
-    @media (max-width: 768px) { padding: 0.2rem 1rem}
+    
     background: linear-gradient(325deg, variables.$green, #15a552);
     
     border: 1px solid #d1d1d6;
@@ -21,6 +21,8 @@
     color: #fff;
     transition: all 0.2s;
     height: 100%;
+    
+    @media (max-width: 768px) { padding: 0.2rem 1rem; font-size: 0.8rem; line-height: 1rem;}
     
     &:hover {
       border-color: #a1a1a6;

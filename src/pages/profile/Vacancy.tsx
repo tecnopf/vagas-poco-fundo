@@ -1,7 +1,7 @@
 // src/components/profile/VacancyList.tsx
-import React, { useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { MdModeEditOutline } from "react-icons/md";
-import { IoIosArrowUp, IoIosArrowDown } from "react-icons/io";
+import { IoIosArrowUp, IoIosArrowDown, IoIosAddCircle } from "react-icons/io";
 import "./Vacancy.scss";
 import { CustomSelect } from "../../components/select/CustomSelect";
 import Switcher1 from "../../components/ToggleSwitch";
@@ -9,6 +9,14 @@ import { useProfile } from "../../cached-requests/getProfile";
 import { FaHouseUser } from "react-icons/fa";
 import Toast from "../../components/toast/Toast";
 import { ImSpinner9 } from "react-icons/im";
+import { useVacancy } from "../../cached-requests/getVacanciesByEstablishment";
+import { API_URL } from "../../configs";
+import ErrorPopup from "../../components/error-popup/ErrorPopup";
+import gsap from "gsap";
+import { useAuth } from "../../context/AuthContext";
+import { HiTrash } from "react-icons/hi";
+import { useQueryClient } from "@tanstack/react-query";
+import { getStatusLabel } from "../../utils/getStatusLabel";
 
 interface Job {
   id: number;
@@ -24,56 +32,83 @@ interface Job {
   link?: string
 }
 
-const initialJobs: Job[] = [
-  {
-    id: 1,
-    title: "Caixa de Supermercado",
-    description: "Atendimento no caixa e organização do supermercado",
-    status: "opened",
-    totalVacancies: 5,
-    remainingVacancies: 4,
-    expiration: "2025-09-25",
-    educationLevel: "fundamental",
-    workingHoursPerDay: 8,
-    createdDate: "2025-09-10 10:30:00",
-    link: "https://google.com"
-  },
-  {
-    id: 2,
-    title: "Atendente de Restaurante",
-    description: "Servir clientes e auxiliar na organização do salão",
-    status: "opened",
-    totalVacancies: 3,
-    remainingVacancies: 1,
-    expiration: null,
-    educationLevel: "middle",
-    workingHoursPerDay: 6,
-    createdDate: "2025-09-10 09:30:00",
-  },
-  {
-    id: 3,
-    title: "Assistente Administrativo",
-    description: "Suporte administrativo e organização de documentos",
-    status: "filled",
-    totalVacancies: 2,
-    remainingVacancies: 0,
-    expiration: "2025-09-20",
-    educationLevel: "higher",
-    workingHoursPerDay: 8,
-    createdDate: "2025-09-08 07:00:00",
-  },
-];
 
-type Props = { onProfileClick?: () => void };
+type Props = { onProfileClick?: () => void, onGetStartedClick?: ()=> void };
 
-const VacancyList: React.FC<Props> = ({ onProfileClick }) => {
-  const [vacancy, setVacancy] = useState<Job[]>(initialJobs);
-  const [flashError, setFlashError] = useState<number | null>(null); // id flashing
+const VacancyList: React.FC<Props> = ({ onProfileClick, onGetStartedClick }) => {
+  const [vacancy, setVacancy] = useState<Job[]>();
+  const {data: vacancyData} = useVacancy()
+  const [flashError, setFlashError] = useState<number | null>(null);
   const [editingJob, setEditingJob] = useState<number | null>(null);
   const [draft, setDraft] = useState<Partial<Job>>({});
-  //const [enabled, setEnabled] = useState(false)
   const { data } = useProfile()
   const [saving, setSaving] = useState(false);
+  const { token } = useAuth()
+  const [errorPopupOpen, setErrorPopupOpen] = useState(false);
+  const [errorStatus, setErrorStatus] = useState<number | undefined>(undefined);
+
+  const titleRef = useRef<HTMLDivElement>(null);
+  const cardsRef = useRef<HTMLDivElement[]>([]);
+
+  const [showConfirm, setShowConfirm] = useState<number | null>(null);
+
+ 
+  useEffect(() => {
+    if (!vacancy || cardsRef.current.length === 0) return;
+
+    const elements = cardsRef.current.filter(Boolean); 
+
+    gsap.fromTo(
+      elements,
+      { opacity: 0, y: 30 },
+      { opacity: 1, y: 0, duration: 0.6, stagger: 0.2, ease: "power2.out", delay: 0.3 }
+    );
+  }, [vacancy]);
+  
+
+  useEffect(() => {
+    if (vacancyData) {
+      const translated = vacancyData.map((v: Job) => ({
+        ...v,
+        expiration: v.expiration ? new Date(v.expiration).toISOString().slice(0, 10) : null,
+      }));
+      setVacancy(translated);
+    }
+  }, [vacancyData])
+
+  const handleDeleteClick = (id: number) => setShowConfirm((prev) => (prev === id ? null : id));
+  const handleCancel = () => {
+    setShowConfirm(null);
+  };
+
+  const queryClient = useQueryClient();
+
+  const handleConfirm = async (id: number) => {
+    try {
+      const res = await fetch(`${API_URL}/api/vacancy/`, {
+        method: "DELETE",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${token}`
+        },
+        body: JSON.stringify({ jobID: id })
+      });
+
+      if (!res.ok) {
+        setErrorStatus(res.status);
+        setErrorPopupOpen(true);
+        return;
+      }
+
+      await queryClient.invalidateQueries({ queryKey: ["vacancy"] });
+
+      setShowConfirm(null);
+    } catch (err) {
+      console.error("Erro ao excluir vaga:", err);
+      setErrorStatus(500);
+      setErrorPopupOpen(true);
+    }
+  };
 
 
   const startEditing = (job: Job) => {
@@ -86,31 +121,82 @@ const VacancyList: React.FC<Props> = ({ onProfileClick }) => {
     setDraft({});
   };
 
-  const saveEditing = async() => {
+  const saveEditing = async () => {
     if (editingJob == null) return;
     setSaving(true);
-    await new Promise(resolve=>setTimeout(resolve,3000))
 
-    setVacancy((prev) =>
-      prev.map((j) =>
-        j.id === editingJob
-          ? ({
-              ...j,
-              ...draft,
-              totalVacancies: Number(draft.totalVacancies ?? j.totalVacancies),
-              remainingVacancies: Number(draft.remainingVacancies ?? j.remainingVacancies),
-              workingHoursPerDay: Number(draft.workingHoursPerDay ?? j.workingHoursPerDay),
-            } as Job)
-          : j
-      )
-    );
-    setEditingJob(null);
-    setDraft({});
-    setSaving(false);
+    try {
+      const payload: Record<string, any> = { jobId: editingJob };
+
+      Object.entries(draft).forEach(([key, value]) => {
+        if (value !== undefined) payload[key] = value;
+      });
+
+      if (payload.expiration) {
+        const date = new Date(payload.expiration);
+        date.setHours(date.getHours() + 3);
+        payload.expiration = date.toISOString();
+      }
+
+      const res = await fetch(`${API_URL}/api/vacancy`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json", "Authorization": `Bearer ${token}` },
+        body: JSON.stringify(payload),
+        
+      });
+
+      if (!res.ok) {
+        setErrorStatus(res.status ?? 500)
+        setErrorPopupOpen(true);
+        return
+      };
+
+      setVacancy((prev) =>
+        prev!.map((j) =>
+          j.id === editingJob
+            ? ({
+                ...j,
+                ...draft,
+                totalVacancies: Number(draft.totalVacancies ?? j.totalVacancies),
+                remainingVacancies: Number(draft.remainingVacancies ?? j.remainingVacancies),
+                workingHoursPerDay: Number(draft.workingHoursPerDay ?? j.workingHoursPerDay),
+              } as Job)
+            : j
+        )
+      );
+      await queryClient.invalidateQueries({queryKey:['vacancies']})
+      await queryClient.invalidateQueries({queryKey:['vacancy']})
+    } catch (err) {
+      console.error(err);
+      
+    } finally {
+      setEditingJob(null);
+      setDraft({});
+      setSaving(false);
+    }
   };
 
   const updateDraft = (field: keyof Job, value: any) => {
-    setDraft((prev) => ({ ...prev, [field]: value }));
+    setDraft((prev) => {
+      let updated = { ...prev, [field]: value };
+
+      if (field === "expiration") {
+        if (!value) {
+          if ((prev.remainingVacancies ?? 0) > 0) updated.status = "opened";
+          else updated.status = "filled";
+        } else {
+          const expDate = new Date(value);
+          const today = new Date();
+          if (expDate > today && (prev.status === "expired" || prev.status === undefined)) {
+            if ((prev.remainingVacancies ?? 0) > 0) updated.status = "opened";
+            else updated.status = "filled";
+          }
+        }
+        updated.expiration = value;
+      }
+
+      return updated;
+    });
   };
 
   const flash = (id: number) => {
@@ -123,7 +209,7 @@ const VacancyList: React.FC<Props> = ({ onProfileClick }) => {
     field: "totalVacancies" | "remainingVacancies",
     delta: number
   ) => {
-    const job = vacancy.find((j) => j.id === jobId);
+    const job = vacancy!.find((j) => j.id === jobId);
     if (!job) return;
 
     if (editingJob !== jobId) {
@@ -161,39 +247,69 @@ const VacancyList: React.FC<Props> = ({ onProfileClick }) => {
   };
 
   const updateStatus = (jobId: number, status: Job["status"]) => {
-    const job = vacancy.find((j) => j.id === jobId);
+    const job = vacancy!.find((j) => j.id === jobId);
     if (!job) return;
 
     if (editingJob !== jobId) setEditingJob(jobId);
 
     setDraft((prev) => {
-      let newDraft = { ...prev, status };
+      const newDraft = { ...prev, status };
+      const now = new Date();
+      now.setDate(now.getDate() - 1); 
+      const yesterdayISO = now.toISOString().slice(0, 10);
 
       if (status === "filled") newDraft.remainingVacancies = 0;
       if (status === "opened" && (prev.remainingVacancies ?? job.remainingVacancies) === 0)
         newDraft.remainingVacancies = 1;
 
+      if (status === "expired") {
+        if (!job.expiration && !prev.expiration) {
+          newDraft.expiration = yesterdayISO;
+        } else {
+          newDraft.expiration = yesterdayISO;
+        }
+      }
+      if (status !== "expired" && prev.expiration) {
+        const expDate = new Date(prev.expiration);
+        const today = new Date();
+        if (expDate > today && (prev.status === "expired" || job.status === "expired")) {
+          newDraft.status = "opened";
+        }
+      }
+
       return newDraft;
     });
-  }
+  };
 
-  const today = new Date();
+  const today = new Date();  
   today.setDate(today.getDate() + 5); 
-  const dateString = today.toISOString().slice(0, 10);
+  const dateString = today.toISOString().slice(0, 10);  
 
   return (
-    <>
-    <div className="vacancy-header">Vagas {data?.name}
+    <div style={{minHeight: 'calc(100vh - 92px)'}}>
+    <div className="vacancy-header" ref={titleRef}>Vagas {data?.name}
       <Toast message="Perfil">
         <FaHouseUser onClick={onProfileClick} id='open-profile-sidebar' />
       </Toast>
     </div>
+    {!vacancy || vacancy.length === 0 && (
+        <div className="no-vacancy-message" style={{display: 'flex', marginTop: '5em', flexDirection: 'column', alignItems: 'center'}}>
+          <p style={{fontFamily: 'SF-Bold'}}>Sem vagas por enquanto.</p>
+          <p style={{fontFamily: 'SF-Bold'}}>Crie sua primeira vaga para começar!</p>
+          <div style={{padding: 5, marginTop: 10, cursor: 'pointer'}} onClick={onGetStartedClick}>
+            <IoIosAddCircle style={{width: 60, height: 60}} />
+          </div>
+        </div>
+      )}
     <div className="vacancy-list">
-      {vacancy.map((v) => {
-        const isEditing = editingJob === v.id;
-        const data = isEditing ? { ...v, ...draft } : v;
-        return (
-          <div key={v.id} className="vacancy-card">
+      {vacancy && vacancy.map((v,i) => {
+          const isEditing = editingJob === v.id;
+          const data = isEditing ? { ...v, ...draft } : v;
+          
+          return (
+            <div key={v.id} className="vacancy-card" ref={(el) => {
+        cardsRef.current[i] = el!; 
+      }}>
             {isEditing && saving && (
                   <div className="card-overlay">
                     <ImSpinner9 className="spinner-icon" />
@@ -212,7 +328,37 @@ const VacancyList: React.FC<Props> = ({ onProfileClick }) => {
                 </button>
                 </>
               )}
+
+              {!isEditing && (
+                <div className="delete-vacancy" >
+                  <HiTrash  className="delete-vacancy-icon" onClick={()=>handleDeleteClick(v.id)}/>
+                  {showConfirm === v.id  && (
+                    <div
+                      className="delete-confirm-modal"
+                      style={{
+                        position: "absolute",
+                        top: "100%",
+                        right: 0,
+                        borderRadius: '10px',
+                        background: "white",
+                        cursor: 'auto',
+                        border: "1px solid #ccc",
+                        padding: "0.5rem 1rem",
+                        zIndex: 10,
+                        boxShadow: "0 2px 6px rgba(0,0,0,0.2)",
               
+                      }}
+                    >
+                      <p>Excluir vaga?</p>
+                      <div style={{ display: "flex", zIndex: 10, gap: "0.5rem", marginTop: "0.25rem" }}>
+                        <button style={{pointerEvents: 'all'}} onClick={()=>handleCancel()}>Cancelar</button>
+                        <button style={{pointerEvents: 'all', color: 'red'}} onClick={()=>handleConfirm(v.id)}>Excluir</button>
+                    
+                      </div>
+                    </div>
+                  )}
+                </div> 
+              )}
             </div>
 
             <div className="vacancy-field">
@@ -227,7 +373,6 @@ const VacancyList: React.FC<Props> = ({ onProfileClick }) => {
                 </button>
                 </>
               )}
-              
             </div>
 
             <div className="vacancy-field">
@@ -235,23 +380,15 @@ const VacancyList: React.FC<Props> = ({ onProfileClick }) => {
               {isEditing ? (
                 <CustomSelect<"opened" | "closed" | "filled" | "expired">
                   customClass="vacancy-select"
-                  
                   options={["opened", "closed", "filled", "expired"]}
                   value={data.status}
                   onChange={(val) => updateStatus(v.id, val)}
-                  getLabel={(val) => {
-                    switch(val) {
-                      case "opened": return "Aberta";
-                      case "closed": return "Fechada";
-                      case "filled": return "Preenchida";
-                      case "expired": return "Expirada";
-                    }
-                  }}
+                  getLabel={getStatusLabel}
                   placeholder="Selecione o status"
                 />
               ) : (
                 <>
-                <span className="vacancy-info">{v.status === "opened" ? "Aberta" : "Fechada"}</span>
+                <span className="vacancy-info">{getStatusLabel(v.status)}</span>
                   <button onClick={() => startEditing(v)}>
                   <MdModeEditOutline className="edit-icon"/>
                 </button>
@@ -281,7 +418,16 @@ const VacancyList: React.FC<Props> = ({ onProfileClick }) => {
                 />
               ) : (
                 <>
-                <span className="vacancy-info">{v.educationLevel}</span>
+                <span className="vacancy-info">{(() => {
+                  switch (v.educationLevel) {
+                    case "none": return "Não necessário";
+                    case "fundamental": return "Ensino Fundamental";
+                    case "middle": return "Ensino Médio";
+                    case "higher": return "Ensino Superior";
+                    case "incompleteHigher": return "Ensino Superior completo/incompleto";
+                    default: return v.educationLevel;
+                  }
+                })()}</span>
                 <button onClick={() => startEditing(v)}>
                   <MdModeEditOutline className="edit-icon"/>
                 </button>
@@ -326,6 +472,7 @@ const VacancyList: React.FC<Props> = ({ onProfileClick }) => {
                 {data.expiration ? (
                   <input
                     type="date"
+                    className="input-date"
                     value={data.expiration}
                     onChange={(e) => updateDraft("expiration", e.target.value || null)}
                   />
@@ -335,15 +482,21 @@ const VacancyList: React.FC<Props> = ({ onProfileClick }) => {
               </>
             ) : (
               <>
-              <span className="vacancy-info">{v.expiration ?? "Sem prazo"}</span>
+              <span className="vacancy-info">{v.expiration
+              ? (() => {
+                  const [year, month, day] = v.expiration.split("-").map(Number);
+                  return new Date(year, month - 1, day).toLocaleDateString("pt-BR", {
+                    day: "2-digit",
+                    month: "2-digit",
+                    year: "numeric",
+                  });
+                })()
+              : "Sem prazo"}</span>
               <button onClick={() => startEditing(v)}>
                 <MdModeEditOutline className="edit-icon"/>
               </button>
               </>
             )}
-
-            
-              
             </div>
 
             <div className="vacancy-field">
@@ -410,11 +563,17 @@ const VacancyList: React.FC<Props> = ({ onProfileClick }) => {
                 </button>
               </div>
             )}
+            
           </div>
         );
       })}
+      <ErrorPopup
+        isOpen={errorPopupOpen}
+        statusCode={errorStatus}
+        onClose={() => setErrorPopupOpen(false)}
+      />
     </div>
-    </>
+    </div>
   );
 };
 

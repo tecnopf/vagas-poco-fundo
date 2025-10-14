@@ -1,4 +1,3 @@
-// src/components/AdminTokenList.tsx
 import { useEffect, useState } from "react";
 import { API_URL } from "../../configs";
 import { TiDelete } from "react-icons/ti";
@@ -84,6 +83,10 @@ const AdminTokenList = () => {
       const newToken = await generateToken();
       setTokens((prev) => (prev ? sortTokens([...prev, newToken]) : [newToken]));
     } catch (err: any) {
+      if (err.message.includes("expired o invalid")) {
+        window.location.reload(); 
+        return;
+      }
       setError(err.message || "Erro ao gerar token");
     } finally {
       setGenerating(false);
@@ -99,14 +102,28 @@ const AdminTokenList = () => {
     }
   };
 
-  const handleCopy = async (value: string) => {
-    try {
-      await navigator.clipboard.writeText(value);
-      alert("Token copiado para a área de transferência!");
-    } catch {
-      alert("Falha ao copiar o token.");
+  const handleCopy = (value: string) => {
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(value)
+        .then(() => alert("Token copiado!"))
+        .catch(() => alert("Falha ao copiar token."));
+    } else {
+      // fallback para navegadores antigos
+      const textarea = document.createElement("textarea");
+      textarea.value = value;
+      document.body.appendChild(textarea);
+      textarea.select();
+      try {
+        document.execCommand("copy");
+        alert("Token copiado!");
+      } catch {
+        alert("Falha ao copiar token.");
+      } finally {
+        document.body.removeChild(textarea);
+      }
     }
   };
+
 
   if (loading) return <p>Loading tokens...</p>;
   if (error) return <p style={{ color: "red" }}>{error}</p>;
@@ -117,13 +134,14 @@ const AdminTokenList = () => {
       <div className="header">
         <h2>Tokens Disponíveis</h2>
         <button
+          id="new-token-button"
           onClick={handleGenerateToken}
           disabled={generating}
         >
           {generating ? "Gerando..." : "Gerar novo token"}
         </button>
       </div>
-      <ul style={{ listStyle: "none", padding: 0 }}>
+      <ul style={{ listStyle: "none"}}>
         {tokens.map((token) => (
           <li
             key={token.id}

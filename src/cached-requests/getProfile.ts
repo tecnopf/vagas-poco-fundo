@@ -20,7 +20,6 @@ export interface Profile {
 }
 
 const fetchProfile = async (token: string | null): Promise<Profile> => {
-  console.log('fetching profile...')
   if (!token) throw new Error("Unauthorized")
 
   const res = await fetch(`${API_URL}/api/profile`, {

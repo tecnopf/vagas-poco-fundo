@@ -13,7 +13,7 @@ const InfoModal: React.FC<InfoModalProps> = ({ open, onClose }) => {
       <div className="modal-content info-modal" onClick={e => e.stopPropagation()}>
         <h2>Solicitar Token</h2>
         <p>Para criar uma conta, solicite um token através do link abaixo e depois escreva o código que você recebeu.</p>
-        <a href="#" className="token-link">Solicitar Token</a>
+        <a href="https://wa.link/vaybpe" target="_blank"  className="token-link">Solicitar Token</a>
       </div>
     </div>
   );

@@ -4,6 +4,7 @@ import "./styles/main.scss";
 import './App.css'
 import Admin from "./pages/admin/Admin";
 import Profile from "./pages/profile/Profile";
+import MagicLogin from "./pages/magic-login/MagicLogin";
 
 
 const App: React.FC = () => {
@@ -19,6 +20,9 @@ const App: React.FC = () => {
           path="/profile"
           element={<Profile />}
         />
+        <Route 
+          path="/auth/magic-login" 
+          element={<MagicLogin />} />
       </Routes>
     </Router>
   );

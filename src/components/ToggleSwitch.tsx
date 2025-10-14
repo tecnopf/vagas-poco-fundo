@@ -13,6 +13,7 @@ const Switcher1 = ({ disabled = false, isChecked, onChange }: SwitcherProps) => 
     <label className='flex cursor-pointer select-none items-center'>
       <div className='relative'>
         <input
+          id="checkbox"
           type='checkbox'
           checked={isChecked}
           onChange={handleCheckboxChange}

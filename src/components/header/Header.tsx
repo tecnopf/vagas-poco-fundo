@@ -16,7 +16,7 @@ interface HeaderProps {
 }
 
 const Header: React.FC<HeaderProps> = ({ onLoginClick }) => {
-  const { authorized,  logout } = useAuth();
+  const { authorized } = useAuth();
   const { data, isLoading } = useProfile();
   const isMobile = useIsMobile();
   const navigate = useNavigate();
@@ -25,7 +25,7 @@ const Header: React.FC<HeaderProps> = ({ onLoginClick }) => {
   return (
     <header className="header">
       <div className="header-items-wrapper">
-        <div>
+        <div style={{flexShrink: 1,  cursor: 'pointer'}} onClick={()=>navigate('/')}>
           <img src={logo} alt="Logo" />
           <ShinyText 
             text="Vagas Poço Fundo" 
@@ -35,23 +35,14 @@ const Header: React.FC<HeaderProps> = ({ onLoginClick }) => {
             className="h1"
             shineColor="rgba(255, 208, 0, 0.938) 50%"
           />
-
         </div>
 
         {authorized && (
-          <div className="user-section">
+          <div style={{flexGrow: 1, justifyContent: 'flex-end'}} className="user-section">
             {!isMobile && isLoading ? (
               <ImSpinner9 className="spinner-icon" />
             ) : location.pathname === "/profile" ? (
-              <button
-                onClick={() => {
-                  logout();
-                  navigate("/"); 
-                }}
-                className="logout-btn"
-              >
-                Sair
-              </button>
+              <div style={{color: 'white'}}>Painel Administrativo</div>
             ) : (
               data?.name && (
                 <div

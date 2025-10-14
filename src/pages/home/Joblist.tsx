@@ -1,96 +1,54 @@
-// src/components/JobList.tsx
-import React, { useState } from "react";
+import React, { useState, type JSX } from "react";
 import "./Joblist.scss";
+import "./Error.scss"
 import { CustomSelect } from "../../components/select/CustomSelect";
-import { MdOutlineAccessTimeFilled } from "react-icons/md";
-import { MdStore } from "react-icons/md";
-import { MdSchool } from "react-icons/md";
-import { useIsMobile } from "../../hooks/UseIsMobile";
+import { MdOutlineAccessTimeFilled, MdStore, MdSchool } from "react-icons/md";
 import { IoIosArrowDown } from "react-icons/io";
-
-
-type EducationLevel = "Ensino Fundamental" | "Ensino Médio" | "Ensino Superior";
-
-interface Job {
-  id: number;
-  title: string;
-  description: string;
-  establishment: string;
-  status: "opened" | "filled";
-  totalVacancies: number;
-  remainingVacancies: number;
-  expiration: string | null;
-  educationLevel: EducationLevel;
-  workingHoursPerDay: number;
-  createdDate: string
-}
-
-const educationLevels: EducationLevel[] = [
-  "Ensino Fundamental",
-  "Ensino Médio",
-  "Ensino Superior",
-];
-
-const jobs: Job[] = [
-  {
-    id: 1,
-    title: "Caixa de Supermercado",
-    description: "Atendimento no caixa e organização do supermercado",
-    establishment: "Supermercado Ferreira",
-    status: "opened",
-    totalVacancies: 5,
-    remainingVacancies: 4,
-    expiration: "2025-09-25",
-    educationLevel: "Ensino Médio",
-    workingHoursPerDay: 8,
-    createdDate: "2025-09-10 10:30:00"
-  },
-  {
-    id: 2,
-    title: "Atendente de Restaurante",
-    description: "Servir clientes e auxiliar na organização do salão",
-    establishment: "Restaurante Sabor & Cia",
-    status: "opened",
-    totalVacancies: 3,
-    remainingVacancies: 1,
-    expiration: null,
-    educationLevel: "Ensino Fundamental",
-    workingHoursPerDay: 6,
-    createdDate: "2025-09-10 09:30:00"
-  },
-  {
-    id: 3,
-    title: "Assistente Administrativo",
-    description: "Suporte administrativo e organização de documentos",
-    establishment: "Escritório Central",
-    status: "filled",
-    totalVacancies: 2,
-    remainingVacancies: 0,
-    expiration: "2025-09-20",
-    educationLevel: "Ensino Superior",
-    workingHoursPerDay: 8,
-    createdDate: "2025-09-08 07:00:00",
-  },
-];
+import { useIsMobile } from "../../hooks/UseIsMobile";
+import { useVacancy } from "../../cached-requests/getVacancies";
+import ShinyText from "../../components/ShinyText";
+import { FaWhatsapp, FaInstagram, FaFacebook, FaLinkedin } from "react-icons/fa";
+import { MdEmail } from "react-icons/md";
+import { getStatusLabel } from "../../utils/getStatusLabel";
+import { ImSpinner9 } from "react-icons/im";
+import { IoIosArrowBack } from "react-icons/io";
+import { IoIosArrowForward } from "react-icons/io";
+import { TbFaceIdError } from "react-icons/tb";
+import { IoLogoWhatsapp } from "react-icons/io";
+import './Pagination.scss'
 
 const formatDateBR = (dateStr: string) => {
   const date = new Date(dateStr);
-  const day = date.getDate().toString().padStart(2, "0");
-  const month = (date.getMonth() + 1).toString().padStart(2, "0"); // mês começa do 0
-  const year = date.getFullYear();
-  return `${day}/${month}/${year}`;
+  return date.toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit", year: "numeric" });
 };
 
-import ShinyText from "../../components/ShinyText";
-
-
 const JobList: React.FC = () => {
-  const [statusFilter, setStatusFilter] = useState<"all" | "opened" | "filled">("all");
-  const [sortByVacancies, setSortByVacancies] = useState<"asc" | "desc" | 'recent'| 'old'>("recent");
-  const [educationFilter, setEducationFilter] = useState<EducationLevel | "all">("all");
+  const [page, setPage] = useState(0);
+  const { data, status, isFetching, isPlaceholderData, isError } = useVacancy(page);
+  const jobs = data?.jobs ?? [];
+  const hasMore = data?.hasMore ?? false;
+
+  const [statusFilter, setStatusFilter] = useState<"all" | "opened" | "filled" | "closed" | "expired">("all");
+  const [sortByVacancies, setSortByVacancies] = useState<"asc" | "desc" | "recent" | "old">("recent");
+  const [educationFilter, setEducationFilter] = useState<string | "all">("all");
   const [hoursFilter, setHoursFilter] = useState<number | "all">("all");
-  const isMobile = useIsMobile();
   const [filtersOpen, setFiltersOpen] = useState(false);
+  const isMobile = useIsMobile();
+
+  const [contactsOpen, setContactsOpen] = useState(false);
+  const [selectedLinks, setSelectedLinks] = useState<Record<string, string> | null>(null);
+
+  const openContacts = (links: Record<string, string>) => {
+    setSelectedLinks(links);
+    setContactsOpen(true);
+    document.body.style.overflow = "hidden";
+  };
+
+  const closeContacts = () => {
+    setContactsOpen(false);
+    setSelectedLinks(null);
+    document.body.style.overflow = "";
+  };
 
   const getBarColor = (remaining: number, total: number) => {
     const percent = remaining / total;
@@ -98,6 +56,30 @@ const JobList: React.FC = () => {
     if (percent > 0.2) return "#ffc107";
     return "#dc3545";
   };
+
+  if (status === "pending")
+    return (
+      <div style={{ display: "flex", alignItems: "center", minHeight: 'calc(100vh - 92px)', justifyContent: "center", marginTop: "1em" }}>
+        <ImSpinner9 className="spinner-icon" />
+      </div>
+    );
+
+  if (isError)
+    return (
+      <div className="fatal-error">
+        <p>Erro ao carregar vagas.</p>
+        <TbFaceIdError className="fatal-error-icon" />
+        <p>Tente novamente mais tarde.</p>
+        <p>Se o erro persistir, entre em contato.</p>
+        <a href="https://wa.link/h027we" target="_blank"><IoLogoWhatsapp className="whats"/></a>
+      </div>
+    );
+
+  if (!jobs.length) return <div style={{ display: "flex", fontFamily: 'SF-Bold', marginTop: '3em', flexDirection: 'column', alignItems: "center", minHeight: 'calc(100vh - 92px)',}}>
+      <p>Nenhuma vaga por enquanto.</p>
+      <p>Se você tem um estabelecimento crie uma conta agora mesmo para anunciar!</p>
+    
+  </div>
 
   const filteredJobs = jobs
     .filter((job) => (statusFilter === "all" ? true : job.status === statusFilter))
@@ -111,42 +93,26 @@ const JobList: React.FC = () => {
       return 0;
     });
 
-  //return null
-
   return (
     <section id="vagas" className="job-list">
-      <ShinyText 
-        text="Vagas Disponíveis" 
-        disabled={false} 
-        speed={3} 
-        className='h2' 
-      />
+      <ShinyText text="Vagas Disponíveis" disabled={false} speed={3} className="h2" />
+
       <div className={`filters-wrapper ${isMobile ? "mobile" : ""}`}>
         {isMobile && (
-          <button
-            className="filters-toggle"
-            onClick={() => setFiltersOpen((o) => !o)}
-          >
-            <IoIosArrowDown
-              className={`arrow ${filtersOpen ? "open" : ""}`}
-            />
+          <button className="filters-toggle" onClick={() => setFiltersOpen((o) => !o)}>
+            <IoIosArrowDown className={`arrow ${filtersOpen ? "open" : ""}`} />
           </button>
         )}
-
         <div className={`filters ${filtersOpen || !isMobile ? "open" : ""}`}>
-          <CustomSelect<"all" | "opened" | "filled">
-            options={["all", "opened", "filled"]}
+          <CustomSelect
+            options={["all", "opened", "filled", "expired", "closed"]}
             value={statusFilter}
             onChange={setStatusFilter}
             placeholder="Todos os status"
-            getLabel={(val:  "all" | "opened" | "filled") =>
-              val === "all" ? "Todos os status" : val === "opened" ? "Aberta" : "Preenchida"
-            }
+            getLabel={(val) => getStatusLabel(val)}
           />
-          
-
-          <CustomSelect<"asc" | "desc" | 'recent'| 'old'>
-            options={['recent', 'old', "asc", "desc"]}
+          <CustomSelect
+            options={["recent", "old", "asc", "desc"]}
             value={sortByVacancies}
             onChange={setSortByVacancies}
             placeholder="Ordem de vagas"
@@ -160,46 +126,54 @@ const JobList: React.FC = () => {
                 : "Mais antigas"
             }
           />
-
-          <CustomSelect<EducationLevel | "all">
-            options={["all", ...educationLevels]}
+          <CustomSelect
+            options={["all", "none", "fundamental", "middle", "higher", "incompleteHigher"]}
             value={educationFilter}
             onChange={setEducationFilter}
             placeholder="Todos os níveis"
-            getLabel={(val)=>val === "all" ? "Todos os níveis" : val}
+            getLabel={(val) => {
+              switch (val) {
+                case "all": return "Todos os níveis";
+                case "none": return "Sem exigência";
+                case "fundamental": return "Ensino Fundamental";
+                case "middle": return "Ensino Médio";
+                case "higher": return "Ensino Superior";
+                case "incompleteHigher": return "Superior completo/incompleto";
+                default: return val;
+              }
+            }}
           />
-
-          <CustomSelect<number | "all">
-            options={["all", 3,4,5,6,7,8,9,10]}
+          <CustomSelect
+            options={["all", 3, 4, 5, 6, 7, 8, 9, 10]}
             value={hoursFilter}
-            onChange={(val: 'all' | number) => setHoursFilter(val === "all" ? "all" : Number(val))}
-            placeholder="Todas as cargas horárias"
-            getLabel={(val: 'all' | number) => (val === "all" ? "Todas as cargas horárias" : `${val}h/dia`)}
+            onChange={(val) => setHoursFilter(val === "all" ? "all" : Number(val))}
+            placeholder="Carga horária"
+            getLabel={(val) => (val === "all" ? "Todas as cargas horárias" : `${val}h/dia`)}
           />
         </div>
       </div>
 
       <ul>
         {filteredJobs.map((job) => {
-          const filledPercentage = Math.round(
-            ((job.totalVacancies - job.remainingVacancies) / job.totalVacancies) * 100
-          );
+          const filledPercentage = Math.round(((job.totalVacancies - job.remainingVacancies) / job.totalVacancies) * 100);
+          const hasLinks = job.establishment?.socialLinks && Object.keys(job.establishment.socialLinks).length > 0;
+
           return (
             <li key={job.id} className={`job-item ${job.status}`}>
               <div className="job-header">
                 <h3>{job.title}</h3>
-                <span className={`status ${job.status}`}>
-                  {job.status === "opened" ? "Aberta" : "Preenchida"}
-                </span>
+                <span className={`status ${job.status}`}>{getStatusLabel(job.status)}</span>
               </div>
+
               <p className="description">{job.description}</p>
+
               <div className="companyWrapper">
                 <MdStore className="companyIcon" />
-                <p className="establishment">{job.establishment}</p>
+                <p className="establishment">{job.establishment?.name ?? "Estabelecimento não informado"}</p>
               </div>
-              <p className="vacancy">
-                Vagas: {job.remainingVacancies}/{job.totalVacancies}
-              </p>
+
+              <p className="vacancy">Vagas: {job.remainingVacancies}/{job.totalVacancies}</p>
+
               <div className="vacancy-bar">
                 <div
                   className="vacancy-fill"
@@ -207,30 +181,114 @@ const JobList: React.FC = () => {
                     width: `${filledPercentage}%`,
                     backgroundColor: getBarColor(job.remainingVacancies, job.totalVacancies),
                   }}
-                ></div>
+                />
               </div>
+
               <div className="icon-text">
                 <MdSchool className="icon" />
-                <p>{job.educationLevel}</p>
+                <p>
+                  {{
+                    none: "Sem exigência",
+                    fundamental: "Ensino Fundamental",
+                    middle: "Ensino Médio",
+                    higher: "Ensino Superior",
+                    incompleteHigher: "Superior (incompleto aceito)",
+                  }[job.educationLevel] || job.educationLevel}
+                </p>
               </div>
-              
+
               <div className="icon-text">
                 <MdOutlineAccessTimeFilled className="icon" />
                 {job.workingHoursPerDay}h/dia
               </div>
 
-              <button>Ver Mais</button>
+              <div className="job-buttons">
+                {hasLinks && (
+                  <button className="contacts-btn" onClick={() => openContacts(job.establishment!.socialLinks!)}>
+                    Contatos
+                  </button>
+                )}
+                {job.link && (
+                  <a href={job.link} target="_blank" rel="noopener noreferrer">
+                    <button>Ver Mais</button>
+                  </a>
+                )}
+              </div>
+
               {job.expiration && (
                 <>
-                <div className="expiration-spacer"></div>
-                <p className="expiration">Expiração: {formatDateBR(job.expiration)}</p>
+                  <div className="expiration-spacer"></div>
+                  <p className="expiration">Expira em: {formatDateBR(job.expiration)}</p>
                 </>
               )}
-              
             </li>
           );
         })}
       </ul>
+
+      <div className="pagination-controls">
+        <div>
+          <button className={page > 0 ? "" : "disabled-btn" } onClick={() => setPage((old) => Math.max(old - 1, 0))} disabled={page === 0}>
+            <IoIosArrowBack/>
+          </button>
+
+        
+        {isFetching ? 
+          <span style={{display: 'flex', justifyContent: 'center'}}>
+            <ImSpinner9 style={{width: 35, height: 35}} className="spinner-icon" />
+          </span>
+         : 
+          <>
+            <span>Página {page + 1}</span>
+          </>
+        }
+        
+        <button className={hasMore ? "" : "disabled-btn"} onClick={() => setPage((old) => (hasMore ? old + 1 : old))} disabled={isPlaceholderData || !hasMore}>
+          <IoIosArrowForward/>
+        </button>
+        
+        </div>
+      </div>
+
+      {contactsOpen && selectedLinks && (
+        <div className="contacts-overlay" onClick={closeContacts}>
+          <div className="contacts-popup" onClick={(e) => e.stopPropagation()}>
+            <h3>Contatos</h3>
+            <ul className="contacts-list">
+              {Object.entries(selectedLinks).map(([key, value]) => {
+                const iconMap: Record<string, JSX.Element> = {
+                  whatsapp: <FaWhatsapp className="contact-icon whatsapp" />,
+                  instagram: <FaInstagram className="contact-icon instagram" />,
+                  email: <MdEmail className="contact-icon email" />,
+                  facebook: <FaFacebook className="contact-icon facebook" />,
+                  linkedin: <FaLinkedin className="contact-icon linkedin" />,
+                };
+
+                if (key === "email") {
+                  return (
+                    <li key={key} className="contact-item">
+                      <a href={`mailto:${value}`} target="_blank" rel="noopener noreferrer">
+                        {iconMap[key]}
+                      </a>
+                      <span>{value}</span>
+                    </li>
+                  );
+                }
+
+                return (
+                  <li key={key} className="contact-item">
+                    <a href={value} target="_blank" rel="noopener noreferrer">
+                      {iconMap[key]}
+                    </a>
+                    <span>{value}</span>
+                  </li>
+                );
+              })}
+            </ul>
+            <button onClick={closeContacts}>Fechar</button>
+          </div>
+        </div>
+      )}
     </section>
   );
 };

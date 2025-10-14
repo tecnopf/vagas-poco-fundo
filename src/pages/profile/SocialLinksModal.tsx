@@ -7,6 +7,7 @@ import { useProfile } from "../../cached-requests/getProfile";
 import { API_URL } from "../../configs";
 import { useAuth } from "../../context/AuthContext";
 import ErrorPopup from "../../components/error-popup/ErrorPopup";
+import { useQueryClient } from "@tanstack/react-query";
 
 interface Props {
   isOpen: boolean;
@@ -34,21 +35,19 @@ const formatWhatsapp = (value: string) => {
 
 const SocialLinksModal: React.FC<Props> = ({ isOpen, onClose, onSave }) => {
   const [links, setLinks] = useState<SocialLinks>({});
-  const { data, isLoading, isError } = useProfile()
+  const { data } = useProfile()
   const { token } = useAuth()
   const [saving, setSaving] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [errorPopup, setErrorPopup] = useState<number|null>(null);
+  const queryClient = useQueryClient();
 
-  useEffect(()=>{
-    console.log('isError: ',isError)
-    console.log(links)
-    console.log(data)
+  
 
-  },[links, data, isError])
 
   useEffect(() => {
     if (isOpen && data && data.socialLinks) {
+     
       setLinks({
         ...data.socialLinks,
         useAccountEmail: data.socialLinks.useAccountEmail ?? false,
@@ -60,7 +59,7 @@ const SocialLinksModal: React.FC<Props> = ({ isOpen, onClose, onSave }) => {
     }
   }, [isOpen]);
 
-  if (!isOpen) return null;
+  
 
   const toggleField = (field: keyof SocialLinks, checked: boolean) => {
     setLinks((prev) => {
@@ -95,7 +94,6 @@ const SocialLinksModal: React.FC<Props> = ({ isOpen, onClose, onSave }) => {
     if (links.whatsapp) {
       const digits = links.whatsapp.replace(/\D/g, "");
       if (digits.length < 10) {
-        console.log('whats')
         newErrors.whatsapp = "Número de WhatsApp incompleto";
       }
     }
@@ -137,6 +135,7 @@ const SocialLinksModal: React.FC<Props> = ({ isOpen, onClose, onSave }) => {
 
       const updated = await res.json();
       onSave(updated); 
+      await queryClient.invalidateQueries({ queryKey: ["vacancies"] });
       onClose();
     } catch (err: any) {
       console.error(err);
@@ -147,7 +146,6 @@ const SocialLinksModal: React.FC<Props> = ({ isOpen, onClose, onSave }) => {
     }
   };
 
-
   return (
     <>
     <div className="modal-overlay">
@@ -156,15 +154,14 @@ const SocialLinksModal: React.FC<Props> = ({ isOpen, onClose, onSave }) => {
           <div className="card-overlay">
             <ImSpinner9 className="spinner-icon" />
           </div>
-        )}
-
+        )}  
         <h2>Adicionar redes sociais</h2>
         <p>Essas redes sociais serão mostradas como meio de contato quando você anunciar a vaga.</p>
-
-        {/* WhatsApp */}
+      
         <div className="social-field">
           <label>
             <input
+              name="whats-check"
               type="checkbox"
               checked={links.whatsapp !== undefined}
               onChange={(e) => toggleField("whatsapp", e.target.checked)}
@@ -175,6 +172,7 @@ const SocialLinksModal: React.FC<Props> = ({ isOpen, onClose, onSave }) => {
             <>
             <input
               type="text"
+              name="whats"
               value={links.whatsapp}
               onChange={(e) => updateValue("whatsapp", formatWhatsapp(e.target.value))}
               placeholder="(35) 99999-9999"
@@ -185,11 +183,11 @@ const SocialLinksModal: React.FC<Props> = ({ isOpen, onClose, onSave }) => {
           )}
         </div>
 
-        {/* Email */}
         <div className="social-field">
           <label style={{color: links.useAccountEmail ? "#b5b5b5" : "#333"}}>
             <input
               type="checkbox"
+              name="email-check"
               checked={links.email !== undefined}
               onChange={(e) => {
                 if (e.target.checked) {
@@ -211,6 +209,8 @@ const SocialLinksModal: React.FC<Props> = ({ isOpen, onClose, onSave }) => {
             <>
               <input
                 type="text"
+                name="email"
+                autoComplete="email"
                 value={links.email}
                 onChange={(e) => updateValue("email", e.target.value)}
                 placeholder="seu@email.com"
@@ -220,11 +220,11 @@ const SocialLinksModal: React.FC<Props> = ({ isOpen, onClose, onSave }) => {
           )}
         </div>
 
-        {/* Instagram */}
         <div className="social-field">
           <label>
             <input
               type="checkbox"
+              name="instagram-check"
               checked={links.instagram !== undefined}
               onChange={(e) => toggleField("instagram", e.target.checked)}
             />
@@ -234,6 +234,7 @@ const SocialLinksModal: React.FC<Props> = ({ isOpen, onClose, onSave }) => {
             <>
               <input
                 type="text"
+                name="instagram"
                 value={links.instagram}
                 onChange={(e) => updateValue("instagram", e.target.value)}
                 placeholder="http://instagram.com/seu-usuario"
@@ -243,11 +244,11 @@ const SocialLinksModal: React.FC<Props> = ({ isOpen, onClose, onSave }) => {
           )}
         </div>
 
-        {/* Facebook */}
         <div className="social-field">
           <label>
             <input
               type="checkbox"
+              name="facebook-check"
               checked={links.facebook !== undefined}
               onChange={(e) => toggleField("facebook", e.target.checked)}
             />
@@ -257,6 +258,7 @@ const SocialLinksModal: React.FC<Props> = ({ isOpen, onClose, onSave }) => {
             <>
               <input
                 type="text"
+                name="facebook"
                 value={links.facebook}
                 onChange={(e) => updateValue("facebook", e.target.value)}
                 placeholder="http://facebook.com/seu-perfil"
@@ -266,11 +268,11 @@ const SocialLinksModal: React.FC<Props> = ({ isOpen, onClose, onSave }) => {
           )}
         </div>
 
-        {/* LinkedIn */}
         <div className="social-field">
           <label>
             <input
               type="checkbox"
+              name="linkedin-check"
               checked={links.linkedin !== undefined}
               onChange={(e) => toggleField("linkedin", e.target.checked)}
             />
@@ -280,6 +282,7 @@ const SocialLinksModal: React.FC<Props> = ({ isOpen, onClose, onSave }) => {
             <>
               <input
                 type="text"
+                name="linkedin"
                 value={links.linkedin}
                 onChange={(e) => updateValue("linkedin", e.target.value)}
                 placeholder="http://linkedin.com/in/seu-perfil"
@@ -289,13 +292,13 @@ const SocialLinksModal: React.FC<Props> = ({ isOpen, onClose, onSave }) => {
           )}
         </div>
 
-        <hr style={{ margin: "16px 0" }} />
+         <hr style={{ margin: "16px 0" }} />
 
-        {/* Usar o mesmo email da conta (somente email) */}
-        <div className="social-field">
+                 <div className="social-field">
           <label style={{color: links.email !== undefined ? "#b5b5b5" : "#1d1d1f" }}>
             <input
               type="checkbox"
+              name="useAccount-check"
               checked={!!links.useAccountEmail}
               onChange={(e) => {
                 if (e.target.checked) {
@@ -321,12 +324,11 @@ const SocialLinksModal: React.FC<Props> = ({ isOpen, onClose, onSave }) => {
             Cancelar
           </button>
         </div>
-
       </div>
     </div>
-    <ErrorPopup onClose={()=>setErrorPopup(null)} isOpen={errorPopup? true : false} statusCode={errorPopup ?? undefined}/>
+    <ErrorPopup nestedModal onClose={()=>setErrorPopup(null)} isOpen={errorPopup? true : false} statusCode={errorPopup ?? undefined}/>
     </>
-  );
+)
 };
 
 export default SocialLinksModal;

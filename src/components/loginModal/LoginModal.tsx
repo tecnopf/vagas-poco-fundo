@@ -2,10 +2,12 @@ import React, { useState } from "react";
 import "./LoginModal.scss";
 import { IoIosInformationCircle } from "react-icons/io";
 import InfoModal from "./InfoModal";
+import ErrorPopup from "../error-popup/ErrorPopup";
 import { useAuth } from "../../context/AuthContext";
 import Loading from "../loading/Loading";
 import { API_URL } from "../../configs";
 import { formatCNPJ } from "../../utils/formatCNPJ";
+import ForgotPasswordModal from "../forgot-password-modal/ForgotPasswordModal";
 
 interface LoginModalProps {
   open: boolean;
@@ -16,8 +18,8 @@ const LoginModal: React.FC<LoginModalProps> = ({ open, onClose }) => {
   if (!open) return null;
 
   const [mode, setMode] = useState<"login" | "register">("login");
-  const [loading, setLoading] = useState(false)
-  const [loadingText, setLoadingText] = useState('')
+  const [loading, setLoading] = useState(false);
+  const [loadingText, setLoadingText] = useState("");
   const [TokenInfoOpen, setTokenInfoOpen] = useState(false);
   const [tokenError, setTokenError] = useState(false);
   const [cnpj, setCnpj] = useState("");
@@ -27,9 +29,12 @@ const LoginModal: React.FC<LoginModalProps> = ({ open, onClose }) => {
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
-  
+  const [popupError, setPopupError] = useState<{ open: boolean; status?: number; message?: string }>({
+    open: false,
+  });
+  const [forgotOpen, setForgotOpen] = useState(false);
 
-  const { login } = useAuth()
+  const { login } = useAuth();
 
   const handleCnpjChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setCnpj(formatCNPJ(e.target.value));
@@ -51,41 +56,54 @@ const LoginModal: React.FC<LoginModalProps> = ({ open, onClose }) => {
       const data = await res.json();
 
       if (!res.ok) {
-        let errorMessage = data.error || "Erro ao entrar";
-        if (res.status === 401) errorMessage = "Credenciais inválidas";
-        throw new Error(errorMessage);
+        let errorMessage = data.error 
+        
+        if (res.status === 401) {
+          switch (data.error) {
+            case 'Invalid user':
+              errorMessage = 'Email não encontrado'
+              break;
+            default:
+              errorMessage = 'Senha Incorreta'
+              break;
+          }
+        } else {
+          errorMessage = "Erro ao entrar";
+        }
+        setPopupError({ open: true, status: res.status, message: errorMessage });
+        throw new Error(data.error);
       }
 
       login(data.token);
-
       onClose();
     } catch (err: any) {
-      setError(err.message);
+      console.error(err);
     } finally {
       setLoading(false);
     }
   };
 
-
   const handleRegisterSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setLoadingText('Criando conta...')
+    setLoadingText("Criando conta...");
     setLoading(true);
-    
     setError(null);
 
-    await new Promise((resolve)=>setTimeout(resolve, 2000))
+    await new Promise((resolve) => setTimeout(resolve, 2000));
 
     if (!name || !email || !cnpj || !token || !password || !confirmPassword) {
       setError("Preencha todos os campos.");
+      setLoading(false);
       return;
     }
     if (token.length < 7) {
       setError("O token deve ter pelo menos 7 caracteres.");
+      setLoading(false);
       return;
     }
     if (password !== confirmPassword) {
       setError("As senhas não conferem.");
+      setLoading(false);
       return;
     }
 
@@ -102,22 +120,17 @@ const LoginModal: React.FC<LoginModalProps> = ({ open, onClose }) => {
         if (res.status === 401) {
           errorMessage = "Token inválido, solicite outro";
           setTokenError(true);
-          setTimeout(() => setTokenError(false), 5000)
+          setTimeout(() => setTokenError(false), 5000);
         }
         throw new Error(errorMessage);
       }
 
-      console.log(data)
-      
-
       login(data.token);
-      console.log('token saved')
-
       onClose();
     } catch (err: any) {
       setError(err.message);
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
   };
 
@@ -166,13 +179,12 @@ const LoginModal: React.FC<LoginModalProps> = ({ open, onClose }) => {
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                 />
+                <span id="forgot-passw" onClick={() => setForgotOpen(true)}>Esqueceu a senha?</span>
                 <button type="submit">Entrar</button>
               </form>
             ) : (
               <form onSubmit={handleRegisterSubmit}>
-                <h3>
-                  Crie uma conta de Estabelecimento para anunciar suas vagas!
-                </h3>
+                <h3>Crie uma conta de Estabelecimento para anunciar suas vagas!</h3>
                 <input
                   type="text"
                   placeholder="Nome do Estabelecimento"
@@ -227,22 +239,21 @@ const LoginModal: React.FC<LoginModalProps> = ({ open, onClose }) => {
                           : undefined,
                     }}
                   />
-                  {confirmPassword.length > 0 &&
-                    password !== confirmPassword && (
-                      <span
-                        style={{
-                          position: "absolute",
-                          right: "10px",
-                          top: "50%",
-                          transform: "translateY(-50%)",
-                          fontSize: "0.85rem",
-                          color: "red",
-                          pointerEvents: "none",
-                        }}
-                      >
-                        Senhas não coincidem
-                      </span>
-                    )}
+                  {confirmPassword.length > 0 && password !== confirmPassword && (
+                    <span
+                      style={{
+                        position: "absolute",
+                        right: "10px",
+                        top: "50%",
+                        transform: "translateY(-50%)",
+                        fontSize: "0.85rem",
+                        color: "red",
+                        pointerEvents: "none",
+                      }}
+                    >
+                      Senhas não coincidem
+                    </span>
+                  )}
                 </div>
                 {error && (
                   <div style={{ position: "relative" }}>
@@ -256,7 +267,14 @@ const LoginModal: React.FC<LoginModalProps> = ({ open, onClose }) => {
         </div>
       </div>
 
+      <ErrorPopup
+        isOpen={popupError.open}
+        statusCode={popupError.status}
+        message={popupError.message}
+        onClose={() => setPopupError({ open: false })}
+      />
       <InfoModal open={TokenInfoOpen} onClose={() => setTokenInfoOpen(false)} />
+      <ForgotPasswordModal open={forgotOpen} onClose={() => setForgotOpen(false)} />
       <Loading loading={loading} text={loadingText} />
     </>
   );
