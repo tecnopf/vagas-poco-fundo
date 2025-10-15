@@ -4,18 +4,21 @@ import { BsWhatsapp } from "react-icons/bs";
 import { useEffect, useRef } from "react";
 import { gsap } from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
+import { useIsMobile } from '../../hooks/UseIsMobile';
 
 gsap.registerPlugin(ScrollTrigger);
 
 const Footer: React.FC = () => {
   const imgRef = useRef<HTMLImageElement>(null);
+  const isMobile = useIsMobile()
 
   useEffect(() => {
     if (!imgRef.current) return;
 
     gsap.to(imgRef.current, {
-      scale: 2.2, // escala máxima
+      scale: 2.2, 
       ease: "sine",
+      transformOrigin: isMobile? "0% 40%" : "15% 40%",
       duration: 2,
       scrollTrigger: {
         trigger: imgRef.current,
