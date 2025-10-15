@@ -1,5 +1,4 @@
 import './Footer.scss'
-import Wallpaper from '../../assets/wallpaper.jpg'
 import { BsWhatsapp } from "react-icons/bs";
 import { useEffect, useRef } from "react";
 import { gsap } from "gsap";
@@ -32,7 +31,7 @@ const Footer: React.FC = () => {
 
   return (
     <footer className="footer">
-      <img src={Wallpaper} alt="Wallpaper" className="footer-bg" ref={imgRef} />
+      <img src='/wallpaper.jpg' alt="Wallpaper" className="footer-bg" ref={imgRef} />
       <div className="overlay"></div>
       <div className='content'>
         <p>Dúvidas, sugestões ou reportar erros: </p>

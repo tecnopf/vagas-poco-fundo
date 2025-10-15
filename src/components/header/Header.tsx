@@ -1,6 +1,5 @@
 import React from "react";
 import { FaBuildingUser } from "react-icons/fa6";
-import logo from '../../assets/brasao.png';
 import './Header.scss';
 import { FiLogIn } from "react-icons/fi";
 import { useAuth } from "../../context/AuthContext";
@@ -26,7 +25,7 @@ const Header: React.FC<HeaderProps> = ({ onLoginClick }) => {
     <header className="header">
       <div className="header-items-wrapper">
         <div style={{flexShrink: 1,  cursor: 'pointer'}} onClick={()=>navigate('/')}>
-          <img src={logo} alt="Logo" />
+          <img src='/brasao.png' alt="Logo" />
           <ShinyText 
             text="Vagas Poço Fundo" 
             disabled={false} 
