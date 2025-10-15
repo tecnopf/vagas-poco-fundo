@@ -96,7 +96,8 @@ const VacancyModal: React.FC<Props> = ({ isOpen, onClose, onSave }) => {
       }
 
       await res.json();
-       await queryClient.invalidateQueries({queryKey:['vacancies']})
+      await queryClient.invalidateQueries({queryKey:['vacancies']})
+      await queryClient.refetchQueries({ queryKey: ['vacancies', 0] });
       await queryClient.invalidateQueries({ queryKey: ["vacancy"] });
       onSave();
       onClose();

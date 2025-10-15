@@ -37,7 +37,7 @@ type Props = { onProfileClick?: () => void, onGetStartedClick?: ()=> void };
 
 const VacancyList: React.FC<Props> = ({ onProfileClick, onGetStartedClick }) => {
   const [vacancy, setVacancy] = useState<Job[]>();
-  const {data: vacancyData} = useVacancy()
+  const {data: vacancyData, isFetching} = useVacancy()
   const [flashError, setFlashError] = useState<number | null>(null);
   const [editingJob, setEditingJob] = useState<number | null>(null);
   const [draft, setDraft] = useState<Partial<Job>>({});
@@ -46,6 +46,7 @@ const VacancyList: React.FC<Props> = ({ onProfileClick, onGetStartedClick }) => 
   const { token } = useAuth()
   const [errorPopupOpen, setErrorPopupOpen] = useState(false);
   const [errorStatus, setErrorStatus] = useState<number | undefined>(undefined);
+  const [deletingVacancy, setDeletingVacancy] = useState(false)
 
   const titleRef = useRef<HTMLDivElement>(null);
   const cardsRef = useRef<HTMLDivElement[]>([]);
@@ -54,7 +55,7 @@ const VacancyList: React.FC<Props> = ({ onProfileClick, onGetStartedClick }) => 
 
  
   useEffect(() => {
-    if (!vacancy || cardsRef.current.length === 0) return;
+    if (!vacancy || cardsRef.current.length === 0 || isFetching) return;
 
     const elements = cardsRef.current.filter(Boolean); 
 
@@ -84,6 +85,7 @@ const VacancyList: React.FC<Props> = ({ onProfileClick, onGetStartedClick }) => 
   const queryClient = useQueryClient();
 
   const handleConfirm = async (id: number) => {
+    setDeletingVacancy(true)
     try {
       const res = await fetch(`${API_URL}/api/vacancy/`, {
         method: "DELETE",
@@ -107,6 +109,8 @@ const VacancyList: React.FC<Props> = ({ onProfileClick, onGetStartedClick }) => 
       console.error("Erro ao excluir vaga:", err);
       setErrorStatus(500);
       setErrorPopupOpen(true);
+    } finally {
+      setDeletingVacancy(false)
     }
   };
 
@@ -142,7 +146,6 @@ const VacancyList: React.FC<Props> = ({ onProfileClick, onGetStartedClick }) => 
         method: "PUT",
         headers: { "Content-Type": "application/json", "Authorization": `Bearer ${token}` },
         body: JSON.stringify(payload),
-        
       });
 
       if (!res.ok) {
@@ -165,10 +168,10 @@ const VacancyList: React.FC<Props> = ({ onProfileClick, onGetStartedClick }) => 
         )
       );
       await queryClient.invalidateQueries({queryKey:['vacancies']})
+      await queryClient.refetchQueries({ queryKey: ['vacancies', 0] });
       await queryClient.invalidateQueries({queryKey:['vacancy']})
     } catch (err) {
       console.error(err);
-      
     } finally {
       setEditingJob(null);
       setDraft({});
@@ -285,6 +288,23 @@ const VacancyList: React.FC<Props> = ({ onProfileClick, onGetStartedClick }) => 
   today.setDate(today.getDate() + 5); 
   const dateString = today.toISOString().slice(0, 10);  
 
+  if(isFetching) {
+    return (
+    <div style={{minHeight: 'calc(100vh - 92px)'}}>
+      <div className="vacancy-header" ref={titleRef}>Vagas {data?.name}
+        <Toast message="Perfil">
+          <FaHouseUser onClick={onProfileClick} id='open-profile-sidebar' />
+        </Toast>
+      </div>
+      <div style={{display: 'flex', alignItems: 'center', justifyContent: 'center', marginTop: '1em'}}>
+        <ImSpinner9 className="spinner-icon" />
+
+      </div>
+      
+    </div>
+    )
+  }
+
   return (
     <div style={{minHeight: 'calc(100vh - 92px)'}}>
     <div className="vacancy-header" ref={titleRef}>Vagas {data?.name}
@@ -351,8 +371,11 @@ const VacancyList: React.FC<Props> = ({ onProfileClick, onGetStartedClick }) => 
                     >
                       <p>Excluir vaga?</p>
                       <div style={{ display: "flex", zIndex: 10, gap: "0.5rem", marginTop: "0.25rem" }}>
-                        <button style={{pointerEvents: 'all'}} onClick={()=>handleCancel()}>Cancelar</button>
+                        <button disabled={deletingVacancy} style={{pointerEvents: 'all'}} onClick={()=>handleCancel()}>Cancelar</button>
+                        {deletingVacancy ? <ImSpinner9 className="spinner-icon" style={{width: 20, height: 20}} /> : 
                         <button style={{pointerEvents: 'all', color: 'red'}} onClick={()=>handleConfirm(v.id)}>Excluir</button>
+                        }
+                        
                     
                       </div>
                     </div>
