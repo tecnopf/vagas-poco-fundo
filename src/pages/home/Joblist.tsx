@@ -16,6 +16,7 @@ import { IoIosArrowForward } from "react-icons/io";
 import { TbFaceIdError } from "react-icons/tb";
 import { IoLogoWhatsapp } from "react-icons/io";
 import './Pagination.scss'
+import { useAuth } from "../../context/AuthContext";
 
 const formatDateBR = (dateStr: string) => {
   const date = new Date(dateStr);
@@ -37,6 +38,7 @@ const JobList: React.FC = () => {
 
   const [contactsOpen, setContactsOpen] = useState(false);
   const [selectedLinks, setSelectedLinks] = useState<Record<string, string> | null>(null);
+  const {authorized} = useAuth()
 
   const openContacts = (links: Record<string, string>) => {
     setSelectedLinks(links);
@@ -77,7 +79,10 @@ const JobList: React.FC = () => {
 
   if (!jobs.length) return <div style={{ display: "flex", fontFamily: 'SF-Bold', marginTop: '3em', flexDirection: 'column', alignItems: "center", minHeight: 'calc(100vh - 92px)',}}>
       <p>Nenhuma vaga por enquanto.</p>
+      {authorized? <p>Comece anunciar suas vagas agora mesmo!</p> : 
       <p>Se você tem um estabelecimento crie uma conta agora mesmo para anunciar!</p>
+      }
+      
     
   </div>
 

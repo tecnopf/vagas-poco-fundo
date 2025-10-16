@@ -6,6 +6,7 @@ import { API_URL } from "../../configs";
 import { useAuth } from "../../context/AuthContext";
 import ErrorPopup from "../../components/error-popup/ErrorPopup";
 import { useQueryClient } from "@tanstack/react-query";
+import Toast from "../../components/toast/Toast";
 
 interface Props {
   isOpen: boolean;
@@ -162,7 +163,10 @@ const VacancyModal: React.FC<Props> = ({ isOpen, onClose, onSave }) => {
           </div>
 
           <div className="vacancy-field" style={{ minHeight: 26 }}>
-            <label ><strong>Expiração:</strong></label>
+            <Toast message="Deixe desativado se sua vaga não for temporária" position="left">
+              <label ><strong>Expiração:</strong></label>
+            </Toast>
+            
             <div style={{ marginLeft: 15 }}></div>
             <Switcher1
               isChecked={Boolean(form.expiration)}
@@ -188,7 +192,10 @@ const VacancyModal: React.FC<Props> = ({ isOpen, onClose, onSave }) => {
           </div>
 
           <div className="vacancy-field">
-            <label htmlFor="vacancy-link"><strong>Link:</strong></label>
+            <Toast message="Esse link, se especificado, será mostrado no botão de 'Ver Mais'" position="left">
+              <label htmlFor="vacancy-link"><strong>Link:</strong></label>
+            </Toast>
+     
             <input
               id="vacancy-link"
               type="text"
