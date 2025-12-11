@@ -1,6 +1,8 @@
 @use '../../variables';
 
 .job-list {
+  display: flex;
+  flex-direction: column;
   padding: variables.$horizontal-desktop-padding;
   padding-top: 0.5rem;
   padding-bottom: 2rem;
