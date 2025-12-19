@@ -20,7 +20,7 @@ import Footer from "../../components/footer/Footer";
 
 
 const Profile: React.FC = () => {
-  const {authorized, token, loadingToken, logout } = useAuth()
+  const {authorized, loading, role, logout } = useAuth()
   const { data, isLoading, isError } = useProfile();
   const [error, setError] = useState<string | null>(null);
   const [showNewVacancyModal, setShowNewVacancyModal] = useState(false);
@@ -46,14 +46,14 @@ const Profile: React.FC = () => {
   };
 
   useEffect(() => {
-    if(loadingToken){
+    if(loading){
       return
     }
     if (!authorized || isError) {
-      queryClient.invalidateQueries({ queryKey: ["profile"] })
+      queryClient.invalidateQueries({ queryKey: ["profile", role] })
       navigate("/")
     }
-  }, [authorized, isError, error, queryClient, loadingToken])
+  }, [authorized, isError, error, queryClient, loading])
 
   const [formData, setFormData] = useState({
     name: "",
@@ -114,11 +114,10 @@ const Profile: React.FC = () => {
     }
 
     try {
-      const res = await fetch(`${API_URL}/api/profile`, {
+      const res = await fetch(`${API_URL}/api/${role}/profile/update`, {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`
         },
         body: JSON.stringify(payload),
       });
@@ -130,7 +129,7 @@ const Profile: React.FC = () => {
       }
 
       setFormData({ ...formData, password: "" }); 
-      await queryClient.invalidateQueries({ queryKey: ["profile"] });
+      await queryClient.invalidateQueries({ queryKey: ["profile", role] });
       setEditing(false);
     } catch (err: any) {
       console.error(err);

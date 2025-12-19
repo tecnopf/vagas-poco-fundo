@@ -19,12 +19,13 @@ export interface Profile {
   socialLinks?: SocialLinks
 }
 
-const fetchProfile = async (token: string | null): Promise<Profile> => {
-  if (!token) throw new Error("Unauthorized")
+const fetchProfile = async (role: string|null): Promise<Profile|null> => {
 
-  const res = await fetch(`${API_URL}/api/profile`, {
+  if(!role) return null
+
+  const res = await fetch(`${API_URL}/api/${role}/profile/get`, {
     method: "GET",
-    headers: { Authorization: `Bearer ${token}` }
+    credentials: 'include'
   })
 
   if (res.status === 401) throw new Error("Unauthorized")
@@ -34,11 +35,11 @@ const fetchProfile = async (token: string | null): Promise<Profile> => {
 }
 
 export const useProfile = () => {
-  const { token, authorized } = useAuth()
+  const { authorized, role } = useAuth()
 
   return useQuery({
-    queryKey: ["profile"],
-    queryFn: () => fetchProfile(token), 
+    queryKey: ["profile", role],
+    queryFn: () => fetchProfile(role), 
     enabled: authorized ? true : false,
     staleTime: 5 * 60 * 1000, 
     gcTime: 10 * 60 * 1000    

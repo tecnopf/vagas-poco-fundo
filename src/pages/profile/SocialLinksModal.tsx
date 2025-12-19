@@ -36,7 +36,7 @@ const formatWhatsapp = (value: string) => {
 const SocialLinksModal: React.FC<Props> = ({ isOpen, onClose, onSave }) => {
   const [links, setLinks] = useState<SocialLinks>({});
   const { data } = useProfile()
-  const { token } = useAuth()
+  const {  } = useAuth()
   const [saving, setSaving] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [errorPopup, setErrorPopup] = useState<number|null>(null);
@@ -122,7 +122,6 @@ const SocialLinksModal: React.FC<Props> = ({ isOpen, onClose, onSave }) => {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify(links),
       });

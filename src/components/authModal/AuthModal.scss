@@ -12,6 +12,8 @@
   z-index: 1000;
 }
 
+
+
 .modal-content {
   background: #fff;
   border-radius: 12px;
@@ -19,12 +21,34 @@
   width: 400px;
   max-width: 90%;
   box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+
+  button {
+    background-color: #fff;
+    border: 1px solid variables.$green;
+    color: variables.$green;
+    transition: all .2s ease;
+    &:hover {
+      background-color: variables.$green;
+      color: #fff
+    }
+
+    &.up {
+      border-bottom-left-radius: 0;
+      border-bottom-right-radius: 0;
+    }
+    &.down {
+      border-top-left-radius: 0;
+      border-top-right-radius: 0;
+      border-top: none;
+    }
+  }
 }
 
 .modal-header {
   display: flex;
   justify-content: center;
   margin-bottom: 1rem;
+  position: relative;
 
   button {
     background: none;
@@ -144,4 +168,42 @@
 
 .info.error-blink {
   animation: blink 1.5s ease 3; 
+}
+
+
+.date-input-wrapper {
+  position: relative;
+}
+
+.fake-placeholder {
+  position: absolute;
+  left: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #999;
+  pointer-events: none;
+  font-size: 0.9rem;
+}
+
+input[type="date"].date-empty {
+  color: transparent; // hide native dd/mm/yyyy
+  user-select: none;
+  pointer-events: none;
+}
+
+input[type="date"].date-empty::-webkit-datetime-edit {
+  color: transparent;
+  user-select: none;
+  pointer-events: none;
+}
+
+input[type="date"]:focus,
+input[type="date"]:not(.date-empty) {
+  color: #000;
+  user-select: none;
+}
+
+input[type="date"]::-webkit-calendar-picker-indicator {
+  opacity: 0.6; // keeps calendar icon visible
+  pointer-events: all;
 }

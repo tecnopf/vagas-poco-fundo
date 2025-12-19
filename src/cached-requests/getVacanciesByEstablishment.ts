@@ -21,12 +21,10 @@ export interface Job {
   };
 }
 
-const fetchVacancies = async (token: string | null): Promise<Job[]> => {
-  if (!token) throw new Error("Unauthorized")
+const fetchVacancies = async (): Promise<Job[]> => {
 
   const res = await fetch(`${API_URL}/api/vacancy/establishment`, {
     method: "GET",
-    headers: { Authorization: `Bearer ${token}` }
   })
 
   if (res.status === 401) throw new Error("Unauthorized")
@@ -36,11 +34,11 @@ const fetchVacancies = async (token: string | null): Promise<Job[]> => {
 }
 
 export const useVacancy = () => {
-  const { token, authorized } = useAuth();
+  const { authorized } = useAuth();
 
   return useQuery({
     queryKey: ["vacancy"],
-    queryFn: () => fetchVacancies(token), 
+    queryFn: () => fetchVacancies(), 
     enabled: authorized ? true : false,
     staleTime: 5 * 60 * 1000, 
     gcTime: 10 * 60 * 1000    

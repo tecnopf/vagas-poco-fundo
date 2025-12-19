@@ -59,6 +59,7 @@ const ForgotPasswordModal: React.FC<ForgotPasswordModalProps> = ({ open, onClose
   };
 
   return (
+    <div>
     <div className={`modal-overlay ${open ? "show" : "hide"}`} onClick={onClose}>
       <div className="forgot-modal-content" onClick={(e) => e.stopPropagation()}>
         <h3>Recuperar Acesso</h3>
@@ -87,9 +88,11 @@ const ForgotPasswordModal: React.FC<ForgotPasswordModalProps> = ({ open, onClose
           isOpen={errorPopupOpen}
           statusCode={errorStatus}
           message={errorMessage}
+          nestedModal
           onClose={() => setErrorPopupOpen(false)}
         />
       </div>
+    </div>
     </div>
   );
 };

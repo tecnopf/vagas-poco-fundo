@@ -1,4 +1,3 @@
-// src/components/profile/VacancyList.tsx
 import React, { useEffect, useRef, useState } from "react";
 import { MdModeEditOutline } from "react-icons/md";
 import { IoIosArrowUp, IoIosArrowDown, IoIosAddCircle } from "react-icons/io";
@@ -43,13 +42,17 @@ const VacancyList: React.FC<Props> = ({ onProfileClick, onGetStartedClick }) => 
   const [draft, setDraft] = useState<Partial<Job>>({});
   const { data } = useProfile()
   const [saving, setSaving] = useState(false);
-  const { token } = useAuth()
+  const { role } = useAuth()
+  console.log('role: ', role)
   const [errorPopupOpen, setErrorPopupOpen] = useState(false);
   const [errorStatus, setErrorStatus] = useState<number | undefined>(undefined);
   const [deletingVacancy, setDeletingVacancy] = useState(false)
 
   const titleRef = useRef<HTMLDivElement>(null);
   const cardsRef = useRef<HTMLDivElement[]>([]);
+
+  console.log('!vacancy:',!vacancy)
+  console.log('vacancy lenght:',vacancy?.length)
 
   const [showConfirm, setShowConfirm] = useState<number | null>(null);
 
@@ -91,7 +94,6 @@ const VacancyList: React.FC<Props> = ({ onProfileClick, onGetStartedClick }) => 
         method: "DELETE",
         headers: {
           "Content-Type": "application/json",
-          "Authorization": `Bearer ${token}`
         },
         body: JSON.stringify({ jobID: id })
       });
@@ -144,7 +146,6 @@ const VacancyList: React.FC<Props> = ({ onProfileClick, onGetStartedClick }) => 
 
       const res = await fetch(`${API_URL}/api/vacancy`, {
         method: "PUT",
-        headers: { "Content-Type": "application/json", "Authorization": `Bearer ${token}` },
         body: JSON.stringify(payload),
       });
 
@@ -298,9 +299,7 @@ const VacancyList: React.FC<Props> = ({ onProfileClick, onGetStartedClick }) => 
       </div>
       <div style={{display: 'flex', alignItems: 'center', justifyContent: 'center', marginTop: '1em'}}>
         <ImSpinner9 className="spinner-icon" />
-
       </div>
-      
     </div>
     )
   }
@@ -312,15 +311,15 @@ const VacancyList: React.FC<Props> = ({ onProfileClick, onGetStartedClick }) => 
         <FaHouseUser onClick={onProfileClick} id='open-profile-sidebar' />
       </Toast>
     </div>
-    {!vacancy || vacancy.length === 0 && (
-        <div className="no-vacancy-message" style={{display: 'flex', marginTop: '5em', flexDirection: 'column', alignItems: 'center'}}>
-          <p style={{fontFamily: 'SF-Bold'}}>Sem vagas por enquanto.</p>
-          <p style={{fontFamily: 'SF-Bold'}}>Crie sua primeira vaga para começar!</p>
-          <div style={{padding: 5, marginTop: 10, cursor: 'pointer'}} onClick={onGetStartedClick}>
-            <IoIosAddCircle style={{width: 60, height: 60}} />
-          </div>
+    {(!vacancy || vacancy.length === 0) && (
+      <div className="no-vacancy-message" style={{display: 'flex', marginTop: '5em', flexDirection: 'column', alignItems: 'center'}}>
+        <p style={{fontFamily: 'SF-Bold'}}>Sem vagas por enquanto.</p>
+        <p style={{fontFamily: 'SF-Bold'}}>Crie sua primeira vaga para começar!</p>
+        <div style={{padding: 5, marginTop: 10, cursor: 'pointer'}} onClick={onGetStartedClick}>
+          <IoIosAddCircle style={{width: 60, height: 60}} />
         </div>
-      )}
+      </div>
+    )}
     <div className="vacancy-list">
       {vacancy && vacancy.map((v,i) => {
           const isEditing = editingJob === v.id;

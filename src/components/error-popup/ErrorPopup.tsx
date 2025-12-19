@@ -6,8 +6,9 @@ interface Props {
   isOpen: boolean;
   statusCode?: number;
   message?: string;
+  rawMessage?: string;
   onClose: () => void;
-  nestedModal?: boolean; // if true, don't change body overflow
+  nestedModal?: boolean;
 }
 
 const statusMessages: Record<number, string> = {
@@ -15,19 +16,36 @@ const statusMessages: Record<number, string> = {
   401: "Não autorizado.",
   403: "Acesso negado.",
   404: "Recurso não encontrado.",
+  409: "Conflito de dados.",
+  422: "Dados inválidos.",
   500: "Erro interno do servidor.",
   0: "Erro de conexão. Verifique sua internet.",
 };
 
-const ErrorPopup: React.FC<Props> = ({ isOpen, statusCode, message, onClose, nestedModal }) => {
-  useEffect(() => {
-    if (!nestedModal) { // only manage body scroll if it's not nested
-      if (isOpen) {
-        document.body.style.overflow = "hidden";
-      } else {
-        document.body.style.overflow = "";
-      }
+const errorCodeMessages: Record<string, string> = {
+  TOKEN_REQUIRED: "Token é obrigatório.",
+  TOKEN_INVALID_OR_EXPIRED: "Token inválido ou expirado.",
+  EMAIL_REQUIRED: "E-mail é obrigatório.",
+  PASSWORD_REQUIRED: "Senha é obrigatória.",
+  EMAIL_ALREADY_EXISTS: "Já existe uma conta com este e-mail. Tente com outro ou entre em contato com o suporte.",
+  CNPJ_ALREADY_EXISTS: "Já existe uma conta com este CNPJ. Tente com outro ou entre em contato com o suporte.",
+  CNPJ_ONLY_NUMBERS: "O CNPJ deve conter apenas números.",
+  CNPJ_INVALID: "O CNPJ é inválido.",
+  CNPJ_REQUIRED: "O CNPJ é necessário.",
+  ESTABLISHMENT_NAME_REQUIRED: "Nome do Estabelecimento é necessário."
+};
 
+const ErrorPopup: React.FC<Props> = ({
+  isOpen,
+  statusCode,
+  message,
+  rawMessage,
+  onClose,
+  nestedModal,
+}) => {
+  useEffect(() => {
+    if (!nestedModal) {
+      document.body.style.overflow = isOpen ? "hidden" : "";
       return () => {
         document.body.style.overflow = "";
       };
@@ -36,12 +54,14 @@ const ErrorPopup: React.FC<Props> = ({ isOpen, statusCode, message, onClose, nes
 
   if (!isOpen) return null;
 
-  const displayMessage = message || statusMessages[statusCode || 0] || "Ocorreu um erro.";
+  const displayMessage = rawMessage || errorCodeMessages[message ?? ''] ||
+    statusMessages[statusCode || 0] ||
+    "Ocorreu um erro inesperado.";
 
   return (
     <div className="error-popup-overlay">
       <div className="error-popup">
-        <AiOutlineExclamationCircle size={40} color="#ff4d4f" />
+        <AiOutlineExclamationCircle size={40} color="#ff4d4f"/>
         <p>{displayMessage}</p>
         <button onClick={onClose}>OK</button>
       </div>

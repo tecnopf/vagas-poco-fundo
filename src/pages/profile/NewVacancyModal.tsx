@@ -43,7 +43,7 @@ const VacancyModal: React.FC<Props> = ({ isOpen, onClose, onSave }) => {
   const [errorPopup, setErrorPopup] = useState<{ open: boolean; status?: number; message?: string }>({
     open: false,
   });
-  const { token } = useAuth();
+  const {  } = useAuth();
   const queryClient = useQueryClient();
 
   if (!isOpen) return null;
@@ -72,7 +72,7 @@ const VacancyModal: React.FC<Props> = ({ isOpen, onClose, onSave }) => {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
+        
         },
         body: JSON.stringify({
           title: form.title,

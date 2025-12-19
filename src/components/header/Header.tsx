@@ -16,7 +16,10 @@ interface HeaderProps {
 
 const Header: React.FC<HeaderProps> = ({ onLoginClick }) => {
   const { authorized } = useAuth();
-  const { data, isLoading } = useProfile();
+  console.log('auth: ', authorized)
+  const { data, isLoading, isError } = useProfile();
+  console.log('data: ', data)
+  console.log('isError:', isError)
   const isMobile = useIsMobile();
   const navigate = useNavigate();
   const location = useLocation();

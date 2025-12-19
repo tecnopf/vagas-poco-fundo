@@ -5,10 +5,11 @@ import "./Loading.scss";
 
 interface LoadingProps {
   loading: boolean;
-  text?: string; // texto opcional
+  text?: string; 
 }
 
 const Loading: React.FC<LoadingProps> = ({ loading, text }) => {
+  if (!loading) return null;
   useEffect(() => {
     if (loading) {
       document.body.style.overflow = "hidden";
@@ -19,7 +20,7 @@ const Loading: React.FC<LoadingProps> = ({ loading, text }) => {
       document.body.style.overflow = ""; 
     };
   }, [loading]);
-  if (!loading) return null;
+  
 
   return (
     <div className="spinner-overlay">

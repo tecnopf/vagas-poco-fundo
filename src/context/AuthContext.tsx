@@ -1,69 +1,90 @@
-// AuthContext.tsx
-import { createContext, useContext, useState, useEffect } from "react";
+import { createContext, useContext, useEffect, useState } from "react";
 import { API_URL } from "../configs";
 
+export type Role = "user" | "establishment" | null;
+
 interface AuthContextType {
-  authorized: boolean | null;
-  login: (token: string) => void;
-  logout: () => void;
-  token: string | null;
-  loadingToken: boolean;
+  role: Role;
+  authorized: boolean;
+  loading: boolean;
+  login: (role: Exclude<Role, null>) => void;
+  logout: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | null>(null);
 
+const ROLE_KEY = "auth:role";
+
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [authorized, setAuthorized] = useState<boolean | null>(null);
-  const [token, setToken] = useState<string | null>(null);
-  const [loadingToken, setLoadingToken] = useState(true); // novo estado
+  const [role, setRole] = useState<Role>(null);
+  const [authorized, setAuthorized] = useState(false);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const stored = localStorage.getItem("jwt");
-    if (stored) {
-      setToken(stored);
-      checkToken(stored);
-    } else {
-      setAuthorized(false);
-      setLoadingToken(false); 
+    const storedRole = localStorage.getItem(ROLE_KEY) as Role | null;
+
+    if (!storedRole) {
+      setLoading(false);
+      return;
     }
+
+    checkAuth(storedRole);
   }, []);
 
-  const checkToken = async (token: string) => {
-
+  const checkAuth = async (storedRole: Exclude<Role, null>) => {
     try {
-      const res = await fetch(`${API_URL}/api/auth/check`, {
-        method: "GET",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
+      const res = await fetch(`${API_URL}/api/auth/${storedRole}/check`, {
+        credentials: "include",
+        method: 'POST'
       });
 
-      if (!res.ok) throw new Error("Invalid token");
+      if (!res.ok) throw new Error("Unauthorized");
 
+      const data = await res.json();
+
+      setRole(data.role);
       setAuthorized(true);
-    } catch (err) {
-      console.warn("Invalid token, logging out...");
-      logout();
+    } catch {
+      localStorage.removeItem(ROLE_KEY);
+      setRole(null);
+      setAuthorized(false);
     } finally {
-      setLoadingToken(false); 
+      setLoading(false);
     }
   };
 
-  const login = (newToken: string) => {
-    localStorage.setItem("jwt", newToken);
-    setToken(newToken);
+  const login = (newRole: Exclude<Role, null>) => {
+    localStorage.setItem(ROLE_KEY, newRole);
+    setRole(newRole);
     setAuthorized(true);
   };
 
-  const logout = () => {
-    localStorage.removeItem("jwt");
-    setToken(null);
-    setAuthorized(false);
+  const logout = async () => {
+    try {
+      if (role) {
+        await fetch(`${API_URL}/api/auth/${role}/logout`, {
+          method: "POST",
+          credentials: "include",
+        });
+      }
+    } finally {
+      localStorage.removeItem(ROLE_KEY);
+      setRole(null);
+      setAuthorized(false);
+      setLoading(false);
+    }
   };
 
   return (
-    <AuthContext.Provider value={{ authorized, login, logout, token, loadingToken }}>
+    <AuthContext.Provider
+      value={{
+        role,
+        authorized,
+        loading,
+        login,
+        logout,
+      }}
+    >
       {children}
     </AuthContext.Provider>
   );
