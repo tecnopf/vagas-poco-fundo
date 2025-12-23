@@ -41,6 +41,7 @@ const EstablishmentLogin: React.FC<Props> = ({ onClose, onError, setForgotOpen, 
     } catch {
       onError(undefined, 0);
     } finally {
+      setLoading(false);
       setLoadingScreen(false)
     }
   };

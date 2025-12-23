@@ -9,6 +9,7 @@ interface Props {
   rawMessage?: string;
   onClose: () => void;
   nestedModal?: boolean;
+  positionAbsolute?: boolean;
 }
 
 const statusMessages: Record<number, string> = {
@@ -26,13 +27,15 @@ const errorCodeMessages: Record<string, string> = {
   TOKEN_REQUIRED: "Token é obrigatório.",
   TOKEN_INVALID_OR_EXPIRED: "Token inválido ou expirado.",
   EMAIL_REQUIRED: "E-mail é obrigatório.",
+  EMAIL_NOT_FOUND: "E-mail não encontrado.",
   PASSWORD_REQUIRED: "Senha é obrigatória.",
-  EMAIL_ALREADY_EXISTS: "Já existe uma conta com este e-mail. Tente com outro ou entre em contato com o suporte.",
-  CNPJ_ALREADY_EXISTS: "Já existe uma conta com este CNPJ. Tente com outro ou entre em contato com o suporte.",
+  PASSWORD_INVALID: "Senha incorreta.",
+  EMAIL_ALREADY_EXISTS: "Já existe uma conta com este e-mail.",
+  CNPJ_ALREADY_EXISTS: "Já existe uma conta com este CNPJ.",
   CNPJ_ONLY_NUMBERS: "O CNPJ deve conter apenas números.",
   CNPJ_INVALID: "O CNPJ é inválido.",
   CNPJ_REQUIRED: "O CNPJ é necessário.",
-  ESTABLISHMENT_NAME_REQUIRED: "Nome do Estabelecimento é necessário."
+  ESTABLISHMENT_NAME_REQUIRED: "Nome do Estabelecimento é necessário.",
 };
 
 const ErrorPopup: React.FC<Props> = ({
@@ -42,6 +45,7 @@ const ErrorPopup: React.FC<Props> = ({
   rawMessage,
   onClose,
   nestedModal,
+  positionAbsolute,
 }) => {
   useEffect(() => {
     if (!nestedModal) {
@@ -54,14 +58,20 @@ const ErrorPopup: React.FC<Props> = ({
 
   if (!isOpen) return null;
 
-  const displayMessage = rawMessage || errorCodeMessages[message ?? ''] ||
+  const displayMessage =
+    rawMessage ||
+    errorCodeMessages[message ?? ""] ||
     statusMessages[statusCode || 0] ||
     "Ocorreu um erro inesperado.";
 
   return (
-    <div className="error-popup-overlay">
+    <div
+      className={`error-popup-overlay ${
+        positionAbsolute ? "absolute" : "fixed"
+      }`}
+    >
       <div className="error-popup">
-        <AiOutlineExclamationCircle size={40} color="#ff4d4f"/>
+        <AiOutlineExclamationCircle size={40} color="#ff4d4f" />
         <p>{displayMessage}</p>
         <button onClick={onClose}>OK</button>
       </div>
